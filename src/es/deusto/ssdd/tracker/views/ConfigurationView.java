@@ -19,5 +19,9 @@ public class ConfigurationView extends JPanel implements Observer{
 		// TODO Auto-generated method stub
 		
 	}
+	
+	private void pulsarBoton(){
+		controller.desconectar();
+	}
 
 }

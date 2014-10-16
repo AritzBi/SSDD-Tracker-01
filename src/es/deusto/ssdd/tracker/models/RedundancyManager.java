@@ -5,5 +5,6 @@ import java.util.Observable;
 public class RedundancyManager extends Observable{
 	
 	public void desconectar(){
+		System.out.println("Prueba para aitor");
 	}
 }

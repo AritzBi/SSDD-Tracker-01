@@ -1,5 +1,7 @@
 package es.deusto.ssdd.tracker.controllers;
 
-public class ConfigurationController {
+import es.deusto.ssdd.tracker.models.RedundancyManager;
 
+public class ConfigurationController {
+	private RedundancyManager redundancyManager;
 }

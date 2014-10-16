@@ -2,10 +2,11 @@ package es.deusto.ssdd.tracker.models;
 
 import java.sql.Connection;
 import java.util.List;
-import java.util.Observable;
 import java.util.Observer;
 
-public class DataManager extends Observable {
+import es.deusto.ssdd.tracker.vo.Peer;
+
+public class DataManager implements Runnable {
 
 	private List<Observer> observers;
 
@@ -16,7 +17,7 @@ public class DataManager extends Observable {
 
 	}
 
-	public void connect() {
+	public void connect( ) {
 
 	}
 
@@ -24,11 +25,11 @@ public class DataManager extends Observable {
 
 	}
 
-	public void insertNewPeer() {
+	public void insertNewPeer( Peer peer ) {
 
 	}
 
-	public void insertNewTorrent() {
+	public void insertNewTorrent( String infoHash ) {
 
 	}
 
@@ -40,5 +41,11 @@ public class DataManager extends Observable {
 
 	public void deleteObserver(Observer o) {
 		this.observers.remove(o);
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
 	}
 }

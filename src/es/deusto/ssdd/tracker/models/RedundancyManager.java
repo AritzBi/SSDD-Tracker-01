@@ -3,7 +3,7 @@ package es.deusto.ssdd.tracker.models;
 import java.util.List;
 import java.util.Observer;
 
-public class RedundancyManager {
+public class RedundancyManager  implements Runnable {
 
 	private List<Observer> observers;
 
@@ -27,5 +27,11 @@ public class RedundancyManager {
 
 	public void desconectar() {
 		this.notifyObservers(null);
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
 	}
 }

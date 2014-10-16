@@ -24,8 +24,4 @@ public class ConfigurationView extends JPanel implements Observer {
 
 	}
 
-	private void pulsarBoton() {
-		controller.desconectar();
-	}
-
 }

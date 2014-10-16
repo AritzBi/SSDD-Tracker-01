@@ -14,6 +14,10 @@ public class PeerListView extends JPanel implements Observer{
 	private static final long serialVersionUID = -3290055577494365102L;
 	private PeerListController controller;
 
+	public PeerListView ( PeerListController peerListController)
+	{
+		controller = peerListController;
+	}
 	@Override
 	public void update(Observable o, Object arg) {
 		// TODO Auto-generated method stub

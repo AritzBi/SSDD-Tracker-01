@@ -10,6 +10,10 @@ public class Tracker {
 	private String port;
 	private List<Tracker> trackersActivos;
 	
+	public Tracker () {
+		
+	}
+	
 	public Tracker ( String id )
 	{
 		this.id = id;

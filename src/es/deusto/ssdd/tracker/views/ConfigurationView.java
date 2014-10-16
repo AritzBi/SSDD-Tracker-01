@@ -7,20 +7,24 @@ import javax.swing.JPanel;
 
 import es.deusto.ssdd.tracker.controllers.ConfigurationController;
 
-public class ConfigurationView extends JPanel implements Observer{
+public class ConfigurationView extends JPanel implements Observer {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -291548739663122869L;
 	private ConfigurationController controller;
 
+	public ConfigurationView(ConfigurationController configurationController) {
+		controller = configurationController;
+		controller.addObserver(this);
+	}
+
 	@Override
 	public void update(Observable o, Object arg) {
-		// TODO Auto-generated method stub
-		
+
 	}
-	
-	private void pulsarBoton(){
+
+	private void pulsarBoton() {
 		controller.desconectar();
 	}
 

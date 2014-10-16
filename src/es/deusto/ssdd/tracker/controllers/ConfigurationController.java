@@ -11,13 +11,13 @@ public class ConfigurationController {
 		redundancyManager.desconectar();
 	}
 	
-	public void addObserver ( Observer observer )
+	public void addObserver ( Observer o )
 	{
-		
+		redundancyManager.addObserver(o);
 	}
 	
-	public void deleteObserver ( Observer observer )
+	public void deleteObserver ( Observer o )
 	{
-		
+		redundancyManager.deleteObserver(o);
 	}
 }

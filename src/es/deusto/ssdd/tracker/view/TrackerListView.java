@@ -17,12 +17,11 @@ public class TrackerListView extends JPanel implements Observer{
 	public TrackerListView ( TrackerListController trackerListController )
 	{
 		controller = trackerListController;
+		controller.addObserver(this);
 	}
 	
 	@Override
 	public void update(Observable o, Object arg) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }

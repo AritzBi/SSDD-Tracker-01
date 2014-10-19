@@ -13,10 +13,32 @@ public class DataManager implements Runnable {
 	private Connection connection;
 	private static DataManager instance;
 
-	protected DataManager() {
+	public DataManager() {
 
 	}
+	
+	/*** OBSERVABLE PATTERN IMPLEMENTACION ***/
+	public void addObserver(Observer o) {
+		if (o != null && !this.observers.contains(o)) {
+			this.observers.add(o);
+		}
+	}
 
+	public void deleteObserver(Observer o) {
+		this.observers.remove(o);
+	}
+	
+	@SuppressWarnings("unused")
+	private void notifyObservers(Object param) {
+		for (Observer observer : this.observers) {
+			if (observer != null) {
+				observer.update(null, param);
+			}
+		}
+	}
+
+	/*** [END] OBSERVABLE PATTERN IMPLEMENTACION ***/
+	
 	public void connect( ) {
 
 	}
@@ -33,19 +55,7 @@ public class DataManager implements Runnable {
 
 	}
 
-	public void addObserver(Observer o) {
-		if (o != null && !this.observers.contains(o)) {
-			this.observers.add(o);
-		}
-	}
-
-	public void deleteObserver(Observer o) {
-		this.observers.remove(o);
-	}
-
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
-		
 	}
 }

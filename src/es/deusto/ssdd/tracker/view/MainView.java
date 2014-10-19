@@ -30,7 +30,7 @@ public class MainView extends JFrame{
 	
 	public static void main ( String [] args )
 	{
-		MainView main = new MainView();
+		new MainView();
 	}
 
 }

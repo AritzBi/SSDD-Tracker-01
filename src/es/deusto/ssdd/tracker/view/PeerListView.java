@@ -17,6 +17,7 @@ public class PeerListView extends JPanel implements Observer{
 	public PeerListView ( PeerListController peerListController)
 	{
 		controller = peerListController;
+		controller.addObserver(this);
 	}
 	@Override
 	public void update(Observable o, Object arg) {

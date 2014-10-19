@@ -2,17 +2,15 @@ package es.deusto.ssdd.tracker.controller;
 
 import java.util.Observer;
 
-import es.deusto.ssdd.tracker.model.RedundancyManager;
 import es.deusto.ssdd.tracker.model.UDPManager;
 
 public class ConfigurationController {
 	private UDPManager udpManager;
 	
-	public void connect( String ipAddress, String port , String id ) {
-		udpManager.connect ( ipAddress, port , id );
-	}
+	/** Duda: pondrias asi o se lo pasamos como parámetro ?? **/
 	
-	public void disconnect() {
+	public ConfigurationController () {
+		udpManager = new UDPManager();
 	}
 	
 	public void addObserver ( Observer o )
@@ -23,5 +21,12 @@ public class ConfigurationController {
 	public void deleteObserver ( Observer o )
 	{
 		udpManager.deleteObserver(o);
+	}
+	
+	public void connect( String ipAddress, String port , String id ) {
+		udpManager.connect ( ipAddress, port , id );
+	}
+	
+	public void disconnect() {
 	}
 }

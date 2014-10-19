@@ -10,6 +10,8 @@ public class UDPManager implements Runnable {
 
 	private List<Observer> observers;
 
+	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
+	
 	public void addObserver(Observer o) {
 		if (o != null && !this.observers.contains(o)) {
 			this.observers.add(o);
@@ -20,6 +22,7 @@ public class UDPManager implements Runnable {
 		this.observers.remove(o);
 	}
 
+	@SuppressWarnings("unused")
 	private void notifyObservers(Object param) {
 		for (Observer observer : this.observers) {
 			if (observer != null) {
@@ -27,6 +30,8 @@ public class UDPManager implements Runnable {
 			}
 		}
 	}
+	
+	/***[END] OBSERVABLE PATTERN IMPLEMENTATION **/
 
 	public void receiveConnectionRequest(DatagramPacket packet) {
 	}

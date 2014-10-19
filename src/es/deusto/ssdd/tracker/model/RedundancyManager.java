@@ -7,6 +7,7 @@ public class RedundancyManager  implements Runnable {
 
 	private List<Observer> observers;
 
+	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
 	public void addObserver(Observer o) {
 		if (o != null && !this.observers.contains(o)) {
 			this.observers.add(o);
@@ -25,13 +26,13 @@ public class RedundancyManager  implements Runnable {
 		}
 	}
 
+	/***[END] OBSERVABLE PATTERN IMPLEMENTATION **/
+	
 	public void desconectar() {
 		this.notifyObservers(null);
 	}
-
+	
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
-		
 	}
 }

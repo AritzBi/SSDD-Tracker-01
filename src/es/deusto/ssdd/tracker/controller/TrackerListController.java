@@ -2,16 +2,22 @@ package es.deusto.ssdd.tracker.controller;
 
 import java.util.Observer;
 
+import es.deusto.ssdd.tracker.model.RedundancyManager;
+
 public class TrackerListController {
 
-	public void addObserver ( Observer observer )
-	{
-		
+	private RedundancyManager redundancyManager;
+
+	public TrackerListController() {
+		redundancyManager = new RedundancyManager();
 	}
-	
-	public void deleteObserver ( Observer observer )
-	{
-		
+
+	public void addObserver(Observer o) {
+		redundancyManager.addObserver(o);
 	}
-	
+
+	public void deleteObserver(Observer o) {
+		redundancyManager.addObserver(o);
+	}
+
 }

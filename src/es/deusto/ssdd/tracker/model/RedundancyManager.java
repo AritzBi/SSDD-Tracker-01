@@ -1,11 +1,17 @@
 package es.deusto.ssdd.tracker.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
 public class RedundancyManager  implements Runnable {
 
 	private List<Observer> observers;
+	
+	public RedundancyManager ()
+	{
+		observers = new ArrayList<Observer>();
+	}
 
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
 	public void addObserver(Observer o) {

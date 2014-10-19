@@ -1,20 +1,22 @@
 package es.deusto.ssdd.tracker.model;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
 import es.deusto.ssdd.tracker.vo.Peer;
-
+@SuppressWarnings("unused")
 public class DataManager implements Runnable {
 
 	private List<Observer> observers;
 
+	
 	private Connection connection;
 	private static DataManager instance;
 
 	public DataManager() {
-
+		observers = new ArrayList<Observer>();
 	}
 	
 	/*** OBSERVABLE PATTERN IMPLEMENTACION ***/
@@ -28,7 +30,6 @@ public class DataManager implements Runnable {
 		this.observers.remove(o);
 	}
 	
-	@SuppressWarnings("unused")
 	private void notifyObservers(Object param) {
 		for (Observer observer : this.observers) {
 			if (observer != null) {

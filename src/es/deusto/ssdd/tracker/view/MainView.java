@@ -17,6 +17,7 @@ public class MainView extends JFrame{
 	
 	public MainView ()
 	{
+		setTitle("Tracker UI");
 		JTabbedPane tabbedPane = new JTabbedPane();
 		configurationView = new ConfigurationView( new ConfigurationController() );
 		tabbedPane.addTab("Configuration", configurationView);
@@ -30,7 +31,8 @@ public class MainView extends JFrame{
 	
 	public static void main ( String [] args )
 	{
-		new MainView();
+		MainView mainView = new MainView();
+		mainView.setVisible(true);
 	}
 
 }

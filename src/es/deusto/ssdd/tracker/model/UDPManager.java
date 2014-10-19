@@ -1,6 +1,7 @@
 package es.deusto.ssdd.tracker.model;
 
 import java.net.DatagramPacket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
@@ -9,6 +10,10 @@ import es.deusto.ssdd.tracker.vo.Tracker;
 public class UDPManager implements Runnable {
 
 	private List<Observer> observers;
+	
+	public UDPManager () {
+		observers = new ArrayList<Observer>();
+	}
 
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
 	

@@ -1,16 +1,29 @@
 package es.deusto.ssdd.tracker.controller;
 
 import java.util.Observer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import es.deusto.ssdd.tracker.model.UDPManager;
 
 public class ConfigurationController {
 	private UDPManager udpManager;
 	
+	
+	private Pattern pattern;
+	private Matcher matcher;
+	
+	private static final String IPADDRESS_PATTERN = 
+			"^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
+			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
+			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
+			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
+	
 	/** Duda: pondrias asi o se lo pasamos como parámetro ?? **/
 	
 	public ConfigurationController () {
 		udpManager = new UDPManager();
+		pattern = Pattern.compile(IPADDRESS_PATTERN);
 	}
 	
 	public void addObserver ( Observer o )
@@ -25,6 +38,12 @@ public class ConfigurationController {
 	
 	public void connect( String ipAddress, String port , String id ) {
 		udpManager.connect ( ipAddress, port , id );
+	}
+	
+	public boolean checkIpAddress ( String ip )
+	{
+		matcher = pattern.matcher(ip);
+		return matcher.matches();
 	}
 	
 	public void disconnect() {

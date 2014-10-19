@@ -1,5 +1,8 @@
 package es.deusto.ssdd.tracker.view;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 
@@ -17,7 +20,11 @@ public class MainView extends JFrame{
 	
 	public MainView ()
 	{
+		setSize(600,300);
+		setLocationRelativeTo(null);
 		setTitle("Tracker UI");
+		
+		//Specify the tabs of the window
 		JTabbedPane tabbedPane = new JTabbedPane();
 		configurationView = new ConfigurationView( new ConfigurationController() );
 		tabbedPane.addTab("Configuration", configurationView);
@@ -26,6 +33,12 @@ public class MainView extends JFrame{
 		peerListView = new PeerListView( new PeerListController() );
 		tabbedPane.addTab("Peers List", peerListView);
 		add(tabbedPane);
+		
+	    addWindowListener(new WindowAdapter() {
+	         public void windowClosing(WindowEvent windowEvent){
+	            System.exit(0);
+	         }        
+	      });
 		
 	}
 	

@@ -1,11 +1,11 @@
-package es.deusto.ssdd.tracker.views;
+package es.deusto.ssdd.tracker.view;
 
 import java.util.Observable;
 import java.util.Observer;
 
 import javax.swing.JPanel;
 
-import es.deusto.ssdd.tracker.controllers.ConfigurationController;
+import es.deusto.ssdd.tracker.controller.ConfigurationController;
 
 public class ConfigurationView extends JPanel implements Observer {
 	/**

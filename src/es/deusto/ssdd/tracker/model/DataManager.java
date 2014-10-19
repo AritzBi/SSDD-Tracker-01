@@ -1,4 +1,4 @@
-package es.deusto.ssdd.tracker.models;
+package es.deusto.ssdd.tracker.model;
 
 import java.sql.Connection;
 import java.util.List;

@@ -1,4 +1,4 @@
-package es.deusto.ssdd.tracker.models;
+package es.deusto.ssdd.tracker.model;
 
 import es.deusto.ssdd.tracker.vo.Tracker;
 

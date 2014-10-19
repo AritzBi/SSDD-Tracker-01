@@ -1,17 +1,17 @@
-package es.deusto.ssdd.tracker.controllers;
+package es.deusto.ssdd.tracker.controller;
 
 import java.util.Observer;
 
-import es.deusto.ssdd.tracker.views.PeerListView;
+public class TrackerListController {
 
-public class PeerListController {
-	
 	public void addObserver ( Observer observer )
 	{
+		
 	}
 	
 	public void deleteObserver ( Observer observer )
 	{
 		
 	}
+	
 }

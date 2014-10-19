@@ -1,11 +1,11 @@
-package es.deusto.ssdd.tracker.views;
+package es.deusto.ssdd.tracker.view;
 
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 
-import es.deusto.ssdd.tracker.controllers.ConfigurationController;
-import es.deusto.ssdd.tracker.controllers.PeerListController;
-import es.deusto.ssdd.tracker.controllers.TrackerListController;
+import es.deusto.ssdd.tracker.controller.ConfigurationController;
+import es.deusto.ssdd.tracker.controller.PeerListController;
+import es.deusto.ssdd.tracker.controller.TrackerListController;
 
 public class MainView extends JFrame{
 	

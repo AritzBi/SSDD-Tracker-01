@@ -1,11 +1,11 @@
-package es.deusto.ssdd.tracker.views;
+package es.deusto.ssdd.tracker.view;
 
 import java.util.Observable;
 import java.util.Observer;
 
 import javax.swing.JPanel;
 
-import es.deusto.ssdd.tracker.controllers.PeerListController;
+import es.deusto.ssdd.tracker.controller.PeerListController;
 
 public class PeerListView extends JPanel implements Observer{
 	/**

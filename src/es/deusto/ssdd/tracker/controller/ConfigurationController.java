@@ -18,8 +18,6 @@ public class ConfigurationController {
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 	
-	/** Duda: pondrias asi o se lo pasamos como parámetro ?? **/
-	
 	public ConfigurationController ( UDPManager udpManager ) {
 		this.udpManager = udpManager;
 		pattern = Pattern.compile(IPADDRESS_PATTERN);

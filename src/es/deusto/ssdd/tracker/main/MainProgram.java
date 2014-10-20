@@ -1,5 +1,10 @@
 package es.deusto.ssdd.tracker.main;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.JPanel;
+
 import es.deusto.ssdd.tracker.controller.ConfigurationController;
 import es.deusto.ssdd.tracker.controller.PeerListController;
 import es.deusto.ssdd.tracker.controller.TrackerListController;
@@ -26,6 +31,14 @@ public class MainProgram {
 		RedundancyManager redundancyManager = new RedundancyManager();
 		TrackerListController trackerListController = new TrackerListController( redundancyManager );
 		TrackerListView trackerListView = new TrackerListView(trackerListController);
-		MainView mainWindow = new MainView ();
+		
+		Map<String,JPanel> panels = new HashMap<String,JPanel>();
+		panels.put ("Configuration" , configurationView );
+		panels.put("Trackers List", trackerListView);
+		panels.put("Peers list", peerListView);
+		
+		MainView mainWindow = new MainView ( panels );
+		
+		mainWindow.setVisible(true);
 	}
 }

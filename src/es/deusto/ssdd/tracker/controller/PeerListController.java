@@ -8,9 +8,9 @@ public class PeerListController {
 	
 	private DataManager dataManager;
 	
-	public PeerListController (  )
+	public PeerListController ( DataManager dataManager )
 	{
-		dataManager = new DataManager();
+		this.dataManager = dataManager;
 	}
 	
 	public void addObserver ( Observer o )

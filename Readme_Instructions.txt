@@ -1,5 +1,5 @@
 The main class that is necessary to run is >>
-MainView.java
+MainProgram.java
 
 Over this screen, there are defined three tabs >>
 1. ConfigurationView:

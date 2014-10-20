@@ -141,18 +141,6 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		return ids;
 	}
 
-	public static void main(String[] args) {
-		JFrame frame = new JFrame("Test");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-		// Add content to the window.
-		frame.add(new ConfigurationView(new ConfigurationController()));
-
-		// Display the window.
-		frame.pack();
-		frame.setVisible(true);
-	}
-
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if ( e.getSource().equals(btnStart) )

@@ -8,8 +8,7 @@ import es.deusto.ssdd.tracker.model.UDPManager;
 
 public class ConfigurationController {
 	private UDPManager udpManager;
-	
-	
+
 	private Pattern pattern;
 	private Matcher matcher;
 	
@@ -21,8 +20,8 @@ public class ConfigurationController {
 	
 	/** Duda: pondrias asi o se lo pasamos como parámetro ?? **/
 	
-	public ConfigurationController () {
-		udpManager = new UDPManager();
+	public ConfigurationController ( UDPManager udpManager ) {
+		this.udpManager = udpManager;
 		pattern = Pattern.compile(IPADDRESS_PATTERN);
 	}
 	

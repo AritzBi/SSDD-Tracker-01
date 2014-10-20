@@ -8,8 +8,8 @@ public class TrackerListController {
 
 	private RedundancyManager redundancyManager;
 
-	public TrackerListController() {
-		redundancyManager = new RedundancyManager();
+	public TrackerListController(RedundancyManager redundancyManager ) {
+		this.redundancyManager = redundancyManager;
 	}
 
 	public void addObserver(Observer o) {

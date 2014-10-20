@@ -21,7 +21,7 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	private static final long serialVersionUID = 3494245647851905237L;
 	private TrackerListController controller;
 	private JTable table;
-	private MyModel model;
+	private MyBooleanModel model;
 	private Object [][] rows;
 	public static final int numberRowsExample=20;
 	
@@ -44,11 +44,9 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	}
 	
 	public void createTable(){
-		Container cTable=new JPanel();
-		//Array con el nombre de las colummnas
 		String[] columnNames = {"Tracker ID", "Active", "Last Keep Alive","Master"};
 		generateTestData();
-		model=new MyModel();
+		model=new MyBooleanModel();
 		model.setColumnIdentifiers(columnNames);
 		model.setDataVector(rows, columnNames);
 		table=new JTable(model);
@@ -61,7 +59,6 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 		scrollPane.setPreferredSize(new Dimension(500,250));
 		this.add(scrollPane);
 	}
-	int[] myIntArray = new int[3];
 	public void generateTestData(){
 		rows=new Object[numberRowsExample][];
 		Object []rowData;
@@ -77,7 +74,7 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 
 }
 
-class MyModel extends DefaultTableModel{
+class MyBooleanModel extends DefaultTableModel{
 
 	private static final long serialVersionUID = 1L;
 

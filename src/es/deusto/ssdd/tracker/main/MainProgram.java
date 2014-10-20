@@ -35,7 +35,7 @@ public class MainProgram {
 		Map<String,JPanel> panels = new HashMap<String,JPanel>();
 		panels.put ("Configuration" , configurationView );
 		panels.put("Trackers List", trackerListView);
-		panels.put("Peers list", peerListView);
+		panels.put("Peers List", peerListView);
 		
 		MainView mainWindow = new MainView ( panels );
 		

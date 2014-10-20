@@ -20,7 +20,7 @@ public class MainView extends JFrame {
 		setLocationRelativeTo(null);
 		setTitle("Tracker UI");
 
-		// Specify the tabs of the window
+		/*** SPECIFY : TABS ***/
 		JTabbedPane tabbedPane = new JTabbedPane();
 		if (panels != null && panels.size() > 0) 
 		{

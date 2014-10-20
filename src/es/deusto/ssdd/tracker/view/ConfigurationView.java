@@ -48,6 +48,7 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 
 	// Create the buttons
 	private JButton btnStart;
+	private JButton btnStop;
 	private JButton btnForceError;
 
 	private void setUpPanel() {
@@ -111,21 +112,21 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		// Specify the button panel
 		btnStart = new JButton("Start");
 		btnStart.addActionListener(this);
+		btnStop = new JButton("Stop");
+		btnStop.addActionListener(this);
+		btnStop.setVisible(false);
 		btnForceError = new JButton("Force Error");
 		btnForceError.addActionListener(this);
+		btnForceError.setEnabled(false);
 		
 		JPanel buttonPane = new JPanel(new FlowLayout());
 		buttonPane.add(btnStart);
+		buttonPane.add(btnStop);
 		buttonPane.add(btnForceError);
 
 		setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 		add(panelData, BorderLayout.CENTER);
 		add(buttonPane, BorderLayout.SOUTH);
-
-	}
-
-	@Override
-	public void update(Observable o, Object arg) {
 
 	}
 
@@ -145,12 +146,17 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		if ( e.getSource().equals(btnStart) )
 		{
 			String ipAddress = txtIpAddress.getText();
+			String port = txtPort.getText();
 			String message = "";
-			if ( ipAddress != null && !ipAddress.equals("") )
+			if ( ipAddress != null && !ipAddress.equals("") && port!= null && !port.equals("") )
 			{
 				if ( controller.checkIpAddress(txtIpAddress.getText()))
 				{
-					controller.connect(txtIpAddress.getText(), txtPort.getText(), (String) spinnerId.getValue());
+					//Si la IP es correcta, se conecta el tracker
+					controller.connect(ipAddress, port, (String) spinnerId.getValue());
+					btnForceError.setEnabled(true);
+					btnStart.setVisible(false);
+					btnStop.setVisible(true);
 				}
 				else
 				{
@@ -159,7 +165,7 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 			}
 			else
 			{
-				message = "You have to specify a value to IP address";
+				message = "You have to specify a value for all fields";
 			}
 
 			if ( message != "" )
@@ -172,6 +178,11 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		{
 			
 		}
+	}
+	
+	@Override
+	public void update(Observable o, Object arg) {
+
 	}
 
 }

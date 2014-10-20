@@ -51,6 +51,7 @@ public class UDPManager implements Runnable {
 	}
 
 	public void connect(String ipAddress, String port, String id) {
+		System.out.println("The tracker is now started!");
 		Tracker tracker = GlobalManager.getInstance().getTracker();
 		tracker.setId(id);
 		tracker.setIpAddress(ipAddress);

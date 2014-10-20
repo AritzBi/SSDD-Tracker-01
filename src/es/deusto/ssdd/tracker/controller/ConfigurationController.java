@@ -19,7 +19,7 @@ public class ConfigurationController {
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 	
-	/** Duda: pondrias asi o se lo pasamos como parámetro ?? **/
+	/** Duda: pondrias asi o se lo pasamos como parï¿½metro ?? **/
 	
 	public ConfigurationController () {
 		udpManager = new UDPManager();

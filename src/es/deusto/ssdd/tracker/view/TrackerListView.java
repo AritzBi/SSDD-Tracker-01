@@ -21,9 +21,9 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	private static final long serialVersionUID = 3494245647851905237L;
 	private TrackerListController controller;
 	private JTable table;
-	private DefaultTableModel model;
+	private MyModel model;
 	private Object [][] rows;
-	public static final int numberRowsExample=10;
+	public static final int numberRowsExample=20;
 	
 
 	public TrackerListView ( TrackerListController trackerListController )
@@ -48,17 +48,17 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 		//Array con el nombre de las colummnas
 		String[] columnNames = {"Tracker ID", "Active", "Last Keep Alive","Master"};
 		generateTestData();
-		model=new DefaultTableModel();
+		model=new MyModel();
 		model.setColumnIdentifiers(columnNames);
 		model.setDataVector(rows, columnNames);
 		table=new JTable(model);
-		table.getColumnModel().getColumn(0).setPreferredWidth(200);
+		table.getColumnModel().getColumn(0).setPreferredWidth(100);
 		table.getColumnModel().getColumn(1).setPreferredWidth(100);
-		table.getColumnModel().getColumn(2).setPreferredWidth(100);
-		table.getColumnModel().getColumn(3).setPreferredWidth(100);
+		table.getColumnModel().getColumn(2).setPreferredWidth(200);
+		table.getColumnModel().getColumn(3).setPreferredWidth(50);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		JScrollPane scrollPane=new JScrollPane(table);
-		scrollPane.setPreferredSize(new Dimension(500,500));
+		scrollPane.setPreferredSize(new Dimension(500,250));
 		this.add(scrollPane);
 	}
 	int[] myIntArray = new int[3];
@@ -66,13 +66,37 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 		rows=new Object[numberRowsExample][];
 		Object []rowData;
 		for(int i=0;i<numberRowsExample;i++){
-			rowData=new String[4];
+			rowData=new Object[4];
 			rowData[0]="Tracker #"+(i+1);
 			rowData[1]="YES";
 			rowData[2]="123132437148126312";
-			rowData[3]="YES";
+			rowData[3]=true;
 			rows[i]=rowData;
 		}
 	}
 
+}
+
+class MyModel extends DefaultTableModel{
+
+	private static final long serialVersionUID = 1L;
+
+	public boolean isCellEditable(int row,int column){
+		return false;
+	}
+    public Class getColumnClass(int column) {
+    	switch (column) {
+	        case 0:
+	            return String.class;
+	        case 1:
+	            return String.class;
+	        case 2:
+	            return String.class;
+	        case 3:
+	            return Boolean.class;
+	        default:
+	            return String.class;
+    	}
+    }
+		
 }

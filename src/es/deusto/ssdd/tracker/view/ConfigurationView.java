@@ -144,14 +144,29 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 	public void actionPerformed(ActionEvent e) {
 		if ( e.getSource().equals(btnStart) )
 		{
-			if ( controller.checkIpAddress(txtIpAddress.getText()))
+			String ipAddress = txtIpAddress.getText();
+			String message = "";
+			if ( ipAddress != null && !ipAddress.equals("") )
 			{
-				controller.connect(txtIpAddress.getText(), txtPort.getText(), (String) spinnerId.getValue());
+				if ( controller.checkIpAddress(txtIpAddress.getText()))
+				{
+					controller.connect(txtIpAddress.getText(), txtPort.getText(), (String) spinnerId.getValue());
+				}
+				else
+				{
+					message = "The specified IP ( " + txtIpAddress.getText() + " ) is not a correct IP address";
+				}
 			}
 			else
 			{
-				JOptionPane.showMessageDialog(null, "The specified IP ( " + txtIpAddress.getText() + " ) is not a correct IP address");
+				message = "You have to specify a value to IP address";
 			}
+
+			if ( message != "" )
+			{
+				JOptionPane.showMessageDialog(null, message);
+			}
+		
 		}
 		else if ( e.getSource().equals(btnForceError))
 		{

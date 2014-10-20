@@ -22,24 +22,23 @@ public class MainView extends JFrame {
 
 		// Specify the tabs of the window
 		JTabbedPane tabbedPane = new JTabbedPane();
-		paintPanels(tabbedPane);
-		add(tabbedPane);
+		if (panels != null && panels.size() > 0) {
+			paintPanels(tabbedPane);
+			if (tabbedPane.getComponents().length > 0) {
+				add(tabbedPane);
+			}
+		}
 
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
 				System.exit(0);
 			}
 		});
-
 	}
 
 	public void paintPanels(JTabbedPane tabbedPane) {
 		for (String titulo : panels.keySet()) {
 			tabbedPane.add(titulo, panels.get(titulo));
 		}
-	}
-
-	public void addPanel(String titulo, JPanel panel) {
-		panels.put(titulo, panel);
 	}
 }

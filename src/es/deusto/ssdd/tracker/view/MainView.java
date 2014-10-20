@@ -22,9 +22,11 @@ public class MainView extends JFrame {
 
 		// Specify the tabs of the window
 		JTabbedPane tabbedPane = new JTabbedPane();
-		if (panels != null && panels.size() > 0) {
+		if (panels != null && panels.size() > 0) 
+		{
 			paintPanels(tabbedPane);
-			if (tabbedPane.getComponents().length > 0) {
+			if (tabbedPane.getComponents().length > 0) 
+			{
 				add(tabbedPane);
 			}
 		}

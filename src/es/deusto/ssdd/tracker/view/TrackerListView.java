@@ -84,7 +84,7 @@ class MyModel extends DefaultTableModel{
 	public boolean isCellEditable(int row,int column){
 		return false;
 	}
-    public Class getColumnClass(int column) {
+	public Class<?> getColumnClass(int column) {
     	switch (column) {
 	        case 0:
 	            return String.class;

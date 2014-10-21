@@ -1,6 +1,9 @@
 package es.deusto.ssdd.tracker.view;
 
 import java.awt.Dimension;
+import java.awt.GridBagLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
@@ -27,12 +30,19 @@ public class TorrentsListView extends JFrame{
 		model.setColumnIdentifiers(columnNames);
 		model.setDataVector(rows, columnNames);
 		table=new JTable(model);
-		table.getColumnModel().getColumn(0).setPreferredWidth(100);
+		table.getColumnModel().getColumn(0).setPreferredWidth(300);
 		table.getColumnModel().getColumn(1).setPreferredWidth(100);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		JScrollPane scrollPane=new JScrollPane(table);
 		scrollPane.setPreferredSize(new Dimension(500,250));
 		this.add(scrollPane);
-		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent windowEvent) {
+				dispose();
+			}
+		});
+		this.setVisible(true);
+		setSize(600, 300);
 	}
 }

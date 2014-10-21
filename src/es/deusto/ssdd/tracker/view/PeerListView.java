@@ -56,7 +56,7 @@ public class PeerListView extends JPanel implements Observer, ActionListener{
 		table.getColumnModel().getColumn(2).setPreferredWidth(200);
 		table.getColumnModel().getColumn(3).setPreferredWidth(50);
 		TableColumnModel colModel = table.getColumnModel();
-		colModel.getColumn(4).setCellRenderer(new ButtonRenderer());
+		colModel.getColumn(5).setCellRenderer(new ButtonRenderer());
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		table.addMouseListener(new JTableButtonMouseListener());
 		JScrollPane scrollPane=new JScrollPane(table);
@@ -67,15 +67,29 @@ public class PeerListView extends JPanel implements Observer, ActionListener{
 		rows=new Object[numberRowsExample][];
 		Object []rowData;
 		for(int i=0;i<numberRowsExample;i++){
-			rowData=new Object[4];
+			rowData=new Object[6];
 			rowData[0]="Peer #"+(i+1);
 			rowData[1]="129.123.123.123";
 			rowData[2]="7808";
 			rowData[3]="10GB";
-			rowData[3]="5GB";
+			rowData[4]="5GB";
 			rows[i]=rowData;
 		}
 	}
+	
+	public Object[][] generateTorrentTestData(){
+		Object [][]data=new Object[numberRowsExample][];
+		Object []rowData;
+		for(int i=0;i<numberRowsExample;i++){
+			rowData=new Object[2];
+			rowData[0]="AQWJDANSM213ASDDANM31231S";
+			rowData[1]="SEEDER";
+			data[i]=rowData;
+		}
+		return data;
+	}
+	
+	
 
 class JTableButtonMouseListener implements MouseListener {
 	 
@@ -84,8 +98,8 @@ class JTableButtonMouseListener implements MouseListener {
 	    TableColumnModel columnModel = table.getColumnModel();
 	    int column = columnModel.getColumnIndexAtX(e.getX());
 	    int row    = e.getY() / table.getRowHeight();
-	    if(column==4 ){
-			//new TorrentsListViews(data);
+	    if(column==5 ){
+			new TorrentsListView(generateTorrentTestData());
 	    }
 
 	  }

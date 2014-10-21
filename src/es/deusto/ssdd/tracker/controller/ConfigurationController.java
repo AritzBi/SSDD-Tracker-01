@@ -33,10 +33,21 @@ public class ConfigurationController {
 		udpManager.deleteObserver(o);
 	}
 	
+	/**
+	 * Method used to connect the tracker with a specified IP, port and id
+	 * @param ipAddress
+	 * @param port
+	 * @param id
+	 */
 	public void connect( String ipAddress, String port , String id ) {
 		udpManager.connect ( ipAddress, port , id );
 	}
 	
+	/**
+	 * Method used to validate if an IP address matches a pattern
+	 * @param ip
+	 * @return true: matches the IP address pattern
+	 */
 	public boolean checkIpAddress ( String ip )
 	{
 		matcher = pattern.matcher(ip);

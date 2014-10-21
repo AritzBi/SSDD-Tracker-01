@@ -25,16 +25,18 @@ public class TorrentsListView extends JFrame{
 	}
 	
 	public void createTable(){
+		setLocationRelativeTo(null);
+		setTitle("Torrent List");
 		String[] columnNames = {"Info hash", "Role"};
 		model=new MyBooleanModel();
 		model.setColumnIdentifiers(columnNames);
 		model.setDataVector(rows, columnNames);
 		table=new JTable(model);
 		table.getColumnModel().getColumn(0).setPreferredWidth(300);
-		table.getColumnModel().getColumn(1).setPreferredWidth(100);
+		table.getColumnModel().getColumn(1).setPreferredWidth(65);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		JScrollPane scrollPane=new JScrollPane(table);
-		scrollPane.setPreferredSize(new Dimension(500,250));
+		scrollPane.setPreferredSize(new Dimension(425,250));
 		this.add(scrollPane);
 
 		addWindowListener(new WindowAdapter() {
@@ -43,6 +45,6 @@ public class TorrentsListView extends JFrame{
 			}
 		});
 		this.setVisible(true);
-		setSize(600, 300);
+		setSize(400, 300);
 	}
 }

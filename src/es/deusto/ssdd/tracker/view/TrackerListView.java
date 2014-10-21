@@ -53,10 +53,10 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 		table.getColumnModel().getColumn(0).setPreferredWidth(100);
 		table.getColumnModel().getColumn(1).setPreferredWidth(100);
 		table.getColumnModel().getColumn(2).setPreferredWidth(200);
-		table.getColumnModel().getColumn(3).setPreferredWidth(50);
+		table.getColumnModel().getColumn(3).setPreferredWidth(80);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		JScrollPane scrollPane=new JScrollPane(table);
-		scrollPane.setPreferredSize(new Dimension(500,250));
+		scrollPane.setPreferredSize(new Dimension(500,225));
 		this.add(scrollPane);
 	}
 	public void generateTestData(){

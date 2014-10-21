@@ -51,10 +51,10 @@ public class PeerListView extends JPanel implements Observer, ActionListener{
 		model.setColumnIdentifiers(columnNames);
 		model.setDataVector(rows, columnNames);
 		table=new JTable(model);
-		table.getColumnModel().getColumn(0).setPreferredWidth(100);
+		table.getColumnModel().getColumn(0).setPreferredWidth(80);
 		table.getColumnModel().getColumn(1).setPreferredWidth(100);
-		table.getColumnModel().getColumn(2).setPreferredWidth(200);
-		table.getColumnModel().getColumn(3).setPreferredWidth(50);
+		table.getColumnModel().getColumn(2).setPreferredWidth(55);
+		table.getColumnModel().getColumn(3).setPreferredWidth(100);
 		TableColumnModel colModel = table.getColumnModel();
 		colModel.getColumn(5).setCellRenderer(new ButtonRenderer());
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
@@ -97,7 +97,8 @@ class JTableButtonMouseListener implements MouseListener {
 	  private void forwardEventToButton(MouseEvent e) {
 	    TableColumnModel columnModel = table.getColumnModel();
 	    int column = columnModel.getColumnIndexAtX(e.getX());
-	    int row    = e.getY() / table.getRowHeight();
+	 // TODO Use the rows later
+	    //int row    = e.getY() / table.getRowHeight();
 	    if(column==5 ){
 			new TorrentsListView(generateTorrentTestData());
 	    }
@@ -148,7 +149,7 @@ class ButtonRenderer implements TableCellRenderer {
                                                    boolean isSelected,
                                                    boolean hasFocus,
                                                    int row, int column) {
-        button.setText("Torrents");
+        button.setText("View");
         return button;
     }
 }

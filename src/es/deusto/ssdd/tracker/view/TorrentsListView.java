@@ -1,7 +1,6 @@
 package es.deusto.ssdd.tracker.view;
 
 import java.awt.Dimension;
-import java.awt.GridBagLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 

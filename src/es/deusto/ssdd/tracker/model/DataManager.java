@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Observer;
 
 import es.deusto.ssdd.tracker.vo.Peer;
+//TODO  store JSON information
+//TODO JSON dump
+//TODO Save peer
+//TODO 
 @SuppressWarnings("unused")
 public class DataManager implements Runnable {
 

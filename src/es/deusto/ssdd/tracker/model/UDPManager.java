@@ -37,17 +37,17 @@ public class UDPManager implements Runnable {
 	}
 	
 	/***[END] OBSERVABLE PATTERN IMPLEMENTATION **/
-
+	//TODO
 	public void receiveConnectionRequest(DatagramPacket packet) {
 	}
-
+	//TODO
 	public void receiveAnnounceRequest(DatagramPacket packet) {
 	}
-
-	public void sendConnectionRequest(DatagramPacket packet) {
+	//TODO
+	public void sendConnectionResponse(DatagramPacket packet) {
 	}
-
-	public void sendAnnounceRequest(DatagramPacket packet) {
+	//TODO
+	public void sendAnnounceResponse(DatagramPacket packet) {
 	}
 
 	public void connect(String ipAddress, String port, String id) {

@@ -4,6 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
+//TODO: Proceso de elección del master
+//TODO: Enviar keep alive
+//TODO: Ready para guardar información
+//TODO: Ok, poodeis guardar información
+//TODO Cuando quitar un tracker
+//TODO  Recibir mensaje de los demás trackers 
+
 public class RedundancyManager  implements Runnable {
 
 	private List<Observer> observers;

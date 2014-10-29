@@ -18,8 +18,7 @@ import es.deusto.ssdd.tracker.view.TrackerListView;
 
 public class MainProgram {
 
-	public static void main ( String [] args ) 
-	{
+	public static void main ( String [] args )  {
 		UDPManager udpManager = new UDPManager();
 		ConfigurationController configurationController = new ConfigurationController(udpManager);
 		ConfigurationView configurationView = new ConfigurationView(configurationController);

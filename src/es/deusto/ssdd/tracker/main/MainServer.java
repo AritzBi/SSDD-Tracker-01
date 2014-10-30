@@ -5,7 +5,9 @@ import es.deusto.ssdd.tracker.model.GlobalManager;
 public class MainServer {
 
 	public static void main(String[] args) {
-		new GlobalManager();
+		GlobalManager globalManager = GlobalManager.getInstance();
+		globalManager.start();
+		
 	}
 
 }

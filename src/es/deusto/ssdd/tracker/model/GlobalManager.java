@@ -13,9 +13,12 @@ public class GlobalManager {
 	
 	public static final String MULTICAST_IP_ADDRESS = "228.5.6.7";
 
-	public GlobalManager() {
-		tracker = new Tracker();
-		
+	private GlobalManager() {
+		tracker = new Tracker();	
+	}
+	
+	public void start () 
+	{
 		dataManager = new DataManager();
 		redundancyManager = new RedundancyManager();
 		udpManager = new UDPManager();

@@ -75,11 +75,11 @@ public class UDPManager implements Runnable {
 
 	public void connect(String ipAddress, String port, String id) {
 		System.out.println("The tracker is now started!");
-		Tracker tracker = GlobalManager.getInstance().getTracker();
+		Tracker tracker = globalManager.getTracker();
 		tracker.setId(id);
 		tracker.setIpAddress(ipAddress);
 		tracker.setPort(port);
-		GlobalManager.getInstance().setTracker(tracker);
+		globalManager.setTracker(tracker);
 	}
 
 	@Override

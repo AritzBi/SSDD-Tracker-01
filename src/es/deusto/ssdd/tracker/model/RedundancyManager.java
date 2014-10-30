@@ -21,6 +21,7 @@ public class RedundancyManager  implements Runnable {
 	private List<Observer> observers;
 	private GlobalManager globalManager;
 	private MulticastSocket socket;
+	private boolean stop = false;
 	
 	private static final int port = 48900;
 	
@@ -38,7 +39,7 @@ public class RedundancyManager  implements Runnable {
 			socket.joinGroup(inetAddress);
 			
 			DatagramPacket packet;
-			while ( true )
+			while ( !stop )
 			{
 				byte[] buf = new byte[256];
 				packet = new DatagramPacket(buf, buf.length);
@@ -99,5 +100,13 @@ public class RedundancyManager  implements Runnable {
 	public void run() {
 		socketListening();
 		sendKeepAlive();
+	}
+
+	public boolean isStop() {
+		return stop;
+	}
+
+	public void setStop(boolean stop) {
+		this.stop = stop;
 	}
 }

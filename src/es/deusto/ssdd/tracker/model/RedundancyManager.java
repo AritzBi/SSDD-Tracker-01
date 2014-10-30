@@ -30,13 +30,22 @@ public class RedundancyManager  implements Runnable {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
 		
+		InetAddress inetAddress;
+		try {
+			socket = new MulticastSocket(port);
+			inetAddress = InetAddress.getByName( globalManager.MULTICAST_IP_ADDRESS);
+			socket.joinGroup(inetAddress);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 	}
 	
 	private void socketListening () {
 		try {
-			socket = new MulticastSocket(port);
-			InetAddress inetAddress = InetAddress.getByName( globalManager.MULTICAST_IP_ADDRESS);
-			socket.joinGroup(inetAddress);
+
 			
 			DatagramPacket packet;
 			while ( !stop )
@@ -88,7 +97,7 @@ public class RedundancyManager  implements Runnable {
 
 		String message = globalManager.getTracker().getId() + "KeepAlive";
 		byte[] messageBytes = message.getBytes();
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes, messageBytes.length, inetAddress, port);
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes, messageBytes.length, inetAddress, 4878);
 		try {
 			socket.send(datagramPacket);
 		} catch (IOException e) {
@@ -98,7 +107,8 @@ public class RedundancyManager  implements Runnable {
 	
 	@Override
 	public void run() {
-		socketListening();
+		System.out.println("Llamo Redundancy Manager");
+		//socketListening();
 		sendKeepAlive();
 	}
 

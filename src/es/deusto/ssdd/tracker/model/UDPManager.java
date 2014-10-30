@@ -33,7 +33,9 @@ public class UDPManager implements Runnable {
 			{
 				byte[] buf = new byte[256];
 				packet = new DatagramPacket(buf, buf.length);
+				System.out.println("Before socket");
 				socket.receive(packet);
+				System.out.println("Post socket");
 				
 				String messageReceived = new String( packet.getData() );
 				System.out.println("Received message > " +messageReceived );
@@ -97,6 +99,7 @@ public class UDPManager implements Runnable {
 
 	@Override
 	public void run() {
+		System.out.println("Llamo al UDP Manager");
 		socketListening();
 	}
 }

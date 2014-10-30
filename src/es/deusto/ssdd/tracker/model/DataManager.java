@@ -62,6 +62,6 @@ public class DataManager implements Runnable {
 
 	@Override
 	public void run() {
-		
+		System.out.println("Llamo Data");
 	}
 }

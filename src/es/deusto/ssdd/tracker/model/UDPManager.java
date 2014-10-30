@@ -8,55 +8,69 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
-import es.deusto.ssdd.tracker.vo.Tracker;
-
 public class UDPManager implements Runnable {
 
 	private List<Observer> observers;
 	private GlobalManager globalManager;
-	private MulticastSocket socket;
-	private boolean stop = false;
 	
-	public UDPManager () {
+	private MulticastSocket socket;
+	private InetAddress inetAddress;
+	private boolean stopListeningPackets = false;
+
+	public UDPManager() {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
 	}
-	
-	public void generateSocket() {
-		try {
-			socket = new MulticastSocket(globalManager.getTracker().getPort());
-			InetAddress inetAddress = InetAddress.getByName( globalManager.getTracker().getIpAddress());
-			socket.joinGroup(inetAddress);
-		}
-		catch (IOException e )
-		{
-			
-		}
 
+	@Override
+	public void run() {
+		createSocket();
+		socketListeningPackets();
 	}
 	
-	public void socketListening () {
+	private void createSocket() {
 		try {
+			socket = new MulticastSocket(globalManager.getTracker().getPortForPeers());
+			inetAddress = InetAddress.getByName(globalManager.getTracker().getIpAddress());
+			socket.joinGroup(inetAddress);
+		} catch (IOException e) {
+			System.out.println("Error creating socket " + e.getMessage());
+		}
+	}
 
+	private void socketListeningPackets() {
+		try {
 			DatagramPacket packet;
-			while ( !stop )
-			{
+			while (!stopListeningPackets) {
 				byte[] buf = new byte[256];
 				packet = new DatagramPacket(buf, buf.length);
 				System.out.println("Before socket");
 				socket.receive(packet);
 				System.out.println("Post socket");
-				
-				String messageReceived = new String( packet.getData() );
-				System.out.println("Received message > " +messageReceived );
+
+				String messageReceived = new String(packet.getData());
+				System.out.println("Received message: " + messageReceived);
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Method used to write over the socket
+	 * 
+	 * @param datagramPacket
+	 */
+	private synchronized void writeSocket(DatagramPacket datagramPacket) {
+		try {
+			socket.send(datagramPacket);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
-	
+
 	public void addObserver(Observer o) {
 		if (o != null && !this.observers.contains(o)) {
 			this.observers.add(o);
@@ -75,42 +89,23 @@ public class UDPManager implements Runnable {
 			}
 		}
 	}
+
+	/*** [END] OBSERVABLE PATTERN IMPLEMENTATION **/
 	
-	/***[END] OBSERVABLE PATTERN IMPLEMENTATION **/
-	//TODO
+	// TODO
 	public void receiveConnectionRequest(DatagramPacket packet) {
 	}
-	//TODO
+
+	// TODO
 	public void receiveAnnounceRequest(DatagramPacket packet) {
 	}
-	//TODO
+
+	// TODO
 	public void sendConnectionResponse(DatagramPacket packet) {
 	}
-	//TODO
+
+	// TODO
 	public void sendAnnounceResponse(DatagramPacket packet) {
 	}
-
-	public boolean isStop() {
-		return stop;
-	}
-
-	public void setStop(boolean stop) {
-		this.stop = stop;
-	}
-
-	public void connect(String ipAddress, int port, String id) {
-		System.out.println("The tracker is now started!");
-		Tracker tracker = globalManager.getTracker();
-		tracker.setId(id);
-		tracker.setIpAddress(ipAddress);
-		tracker.setPort(port);
-		globalManager.setTracker(tracker);
-	}
-
-	@Override
-	public void run() {
-		System.out.println("Llamo al UDP Manager");
-		generateSocket();
-		socketListening();
-	}
+	
 }

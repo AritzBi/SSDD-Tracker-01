@@ -7,18 +7,21 @@ public class Tracker {
 
 	private String id;
 	private String ipAddress;
+	//Port --> port for communication between trackers
 	private int port;
+	//PortForPeers --> port for communication between peer to tracker
+	private int portForPeers;
 	private List<Tracker> trackersActivos;
 	
 	public Tracker () {
-		
 	}
 	
-	public Tracker ( String id, String ipAddress, int port )
+	public Tracker ( String id, String ipAddress, int port, int portForPeers )
 	{
 		this.id = id;
 		this.ipAddress = ipAddress;
 		this.port = port;
+		this.portForPeers = portForPeers;
 		trackersActivos = new ArrayList<Tracker>();
 	}
 	
@@ -50,6 +53,14 @@ public class Tracker {
 
 	public void setPort(int port) {
 		this.port = port;
+	}
+
+	public int getPortForPeers() {
+		return portForPeers;
+	}
+
+	public void setPortForPeers(int portForPeers) {
+		this.portForPeers = portForPeers;
 	}
 
 	public List<Tracker> getTrackersActivos() {

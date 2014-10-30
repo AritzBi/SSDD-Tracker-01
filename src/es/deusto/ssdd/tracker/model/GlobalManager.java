@@ -4,30 +4,35 @@ import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class GlobalManager {
 
-	private static Tracker tracker;
+	private Tracker tracker;
 	private static GlobalManager instance;
 	
-	private DataManager dataManager;
 	private RedundancyManager redundancyManager;
 	private UDPManager udpManager;
 	
 	private GlobalManager() {
-		tracker = new Tracker( );
+		tracker = new Tracker();
 	}
 	
-	public void start () 
+	/**
+	 * Method used to start a Thread for Redundancy Manager and UDP Manager
+	 */
+	public void start() 
 	{
-		dataManager = new DataManager();
 		redundancyManager = new RedundancyManager();
 		udpManager = new UDPManager();
-		new Thread(dataManager).start();
 		new Thread(redundancyManager).start();
 		new Thread(udpManager).start();
 	}
 
+	/**
+	 * Method used to get a instance of the object
+	 * Constructor is set as private
+	 * @return
+	 */
 	public static GlobalManager getInstance() {
 		if (instance == null) {
-			instance = new GlobalManager( );
+			instance = new GlobalManager();
 		}
 		return instance;
 	}
@@ -40,11 +45,19 @@ public class GlobalManager {
 		this.tracker = tracker;
 	}
 	
-	public void connect ( String ip, int port , String id )
+	/**
+	 * Method used to connect a new tracker with the ip, port and id and start the associated threads
+	 * @param ip
+	 * @param port
+	 * @param portForPeers
+	 * @param id
+	 */
+	public void connect ( String ipAddress, int port , int portForPeers, String id )
 	{
 		tracker.setId(id);
 		tracker.setPort(port);
-		tracker.setIpAddress(ip);
+		tracker.setPortForPeers(portForPeers);
+		tracker.setIpAddress(ipAddress);
 		start();
 	}
 }

@@ -20,6 +20,7 @@ import es.deusto.ssdd.tracker.view.TrackerListView;
 public class MainProgram {
 
 	public static void main ( String [] args )  {
+		
 		GlobalManager globalManager = GlobalManager.getInstance();
 		
 		UDPManager udpManager = new UDPManager();

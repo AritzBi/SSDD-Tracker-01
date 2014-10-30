@@ -43,8 +43,8 @@ public class ConfigurationController {
 	 * @param port
 	 * @param id
 	 */
-	public void connect( String ipAddress, int port , String id ) {
-		globalManager.connect( ipAddress , port, id );
+	public void connect( String ipAddress, int port , int portForPeers, String id ) {
+		globalManager.connect( ipAddress , port, portForPeers, id );
 	}
 	
 	/**

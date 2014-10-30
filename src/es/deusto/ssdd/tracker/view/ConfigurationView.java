@@ -39,11 +39,13 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 	// Create the labels
 	private Label lblIpAddress;
 	private Label lblPort;
+	private Label lblPortForPeers;
 	private Label lblId;
 
 	// Create the texfields
 	private JTextField txtIpAddress;
 	private JTextField txtPort;
+	private JTextField txtPortForPeers;
 	private JSpinner spinnerId;
 
 	// Create the buttons
@@ -55,8 +57,10 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		// Specify the labels
 		lblIpAddress = new Label("IP address" );
 		lblIpAddress.setFont(new Font ( "Serif", Font.BOLD , 14 ));
-		lblPort = new Label("Port");
+		lblPort = new Label("Port (Trackers)");
 		lblPort.setFont(new Font ( "Serif", Font.BOLD , 14 ));
+		lblPortForPeers = new Label("Port (Peers)");
+		lblPortForPeers.setFont(new Font ( "Serif", Font.BOLD , 14 ));
 		lblId = new Label("Id");
 		lblId.setFont(new Font ( "Serif", Font.BOLD , 14 ));
 
@@ -75,10 +79,20 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		boxForPort.add(Box.createVerticalGlue());
 		txtPort = new JTextField();
 		txtPort.setColumns(20);
-		txtPort.setMaximumSize(new Dimension(Integer.MAX_VALUE, txtIpAddress
+		txtPort.setMaximumSize(new Dimension(Integer.MAX_VALUE, txtPort
 				.getPreferredSize().height));
 		boxForPort.add(txtPort);
 		boxForPort.add(Box.createVerticalGlue());
+		
+		// Specify the box for PORT FOR PEERS
+		Box boxForPortForPeers = Box.createVerticalBox();
+		boxForPortForPeers.add(Box.createVerticalGlue());
+		txtPortForPeers = new JTextField();
+		txtPortForPeers.setColumns(20);
+		txtPortForPeers.setMaximumSize(new Dimension(Integer.MAX_VALUE, txtPortForPeers
+				.getPreferredSize().height));
+		boxForPortForPeers.add(txtPortForPeers);
+		boxForPortForPeers.add(Box.createVerticalGlue());
 
 		// Specify the box for ID TRACKER
 		Box boxForId = Box.createVerticalBox();
@@ -99,14 +113,19 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		JPanel panelPort = new JPanel(new GridLayout(1, 0));
 		panelPort.add(lblPort);
 		panelPort.add(boxForPort);
+		
+		JPanel panelPortForPeers = new JPanel(new GridLayout(1, 0));
+		panelPortForPeers.add(lblPortForPeers);
+		panelPortForPeers.add(boxForPortForPeers);
 
 		JPanel panelId = new JPanel(new GridLayout(1, 0));
 		panelId.add(lblId);
 		panelId.add(boxForId);
 
-		JPanel panelData = new JPanel(new GridLayout(3, 0));
+		JPanel panelData = new JPanel(new GridLayout(4, 0));
 		panelData.add(panelIpAddress);
 		panelData.add(panelPort);
+		panelData.add(panelPortForPeers);
 		panelData.add(panelId);
 
 		// Specify the button panel
@@ -147,13 +166,14 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		{
 			String ipAddress = txtIpAddress.getText();
 			String port = txtPort.getText();
+			String portForPeers = txtPortForPeers.getText();
 			String message = "";
-			if ( ipAddress != null && !ipAddress.equals("") && port!= null && !port.equals("") )
+			if ( ipAddress != null && !ipAddress.equals("") && port!= null && !port.equals("") && portForPeers != null && !portForPeers.equals("") )
 			{
 				if ( controller.checkIpAddress(txtIpAddress.getText()))
 				{
 					//Si la IP es correcta, se conecta el tracker
-					controller.connect(ipAddress, Integer.parseInt(port), (String) spinnerId.getValue());
+					controller.connect(ipAddress, Integer.parseInt(port), Integer.parseInt(portForPeers) , (String) spinnerId.getValue());
 					btnForceError.setEnabled(true);
 					btnStart.setVisible(false);
 					btnStop.setVisible(true);

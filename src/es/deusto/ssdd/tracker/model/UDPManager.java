@@ -22,12 +22,22 @@ public class UDPManager implements Runnable {
 		globalManager = GlobalManager.getInstance();
 	}
 	
+	public void generateSocket() {
+		try {
+			socket = new MulticastSocket(globalManager.getTracker().getPort());
+			InetAddress inetAddress = InetAddress.getByName( globalManager.getTracker().getIpAddress());
+			socket.joinGroup(inetAddress);
+		}
+		catch (IOException e )
+		{
+			
+		}
+
+	}
+	
 	public void socketListening () {
 		try {
-			socket = new MulticastSocket(4878);
-			InetAddress inetAddress = InetAddress.getByName( globalManager.MULTICAST_IP_ADDRESS);
-			socket.joinGroup(inetAddress);
-			
+
 			DatagramPacket packet;
 			while ( !stop )
 			{
@@ -88,7 +98,7 @@ public class UDPManager implements Runnable {
 		this.stop = stop;
 	}
 
-	public void connect(String ipAddress, String port, String id) {
+	public void connect(String ipAddress, int port, String id) {
 		System.out.println("The tracker is now started!");
 		Tracker tracker = globalManager.getTracker();
 		tracker.setId(id);
@@ -100,6 +110,7 @@ public class UDPManager implements Runnable {
 	@Override
 	public void run() {
 		System.out.println("Llamo al UDP Manager");
+		generateSocket();
 		socketListening();
 	}
 }

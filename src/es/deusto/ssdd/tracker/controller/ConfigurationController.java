@@ -4,10 +4,13 @@ import java.util.Observer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import es.deusto.ssdd.tracker.model.GlobalManager;
 import es.deusto.ssdd.tracker.model.UDPManager;
+import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class ConfigurationController {
 	private UDPManager udpManager;
+	private GlobalManager globalManager;
 
 	private Pattern pattern;
 	private Matcher matcher;
@@ -18,8 +21,9 @@ public class ConfigurationController {
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 	
-	public ConfigurationController ( UDPManager udpManager ) {
+	public ConfigurationController ( UDPManager udpManager , GlobalManager globalManager ) {
 		this.udpManager = udpManager;
+		this.globalManager = globalManager;
 		pattern = Pattern.compile(IPADDRESS_PATTERN);
 	}
 	
@@ -39,8 +43,8 @@ public class ConfigurationController {
 	 * @param port
 	 * @param id
 	 */
-	public void connect( String ipAddress, String port , String id ) {
-		udpManager.connect ( ipAddress, port , id );
+	public void connect( String ipAddress, int port , String id ) {
+		globalManager.connect( ipAddress , port, id );
 	}
 	
 	/**

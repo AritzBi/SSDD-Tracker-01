@@ -4,17 +4,15 @@ import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class GlobalManager {
 
-	private Tracker tracker;
+	private static Tracker tracker;
 	private static GlobalManager instance;
 	
 	private DataManager dataManager;
 	private RedundancyManager redundancyManager;
 	private UDPManager udpManager;
 	
-	public static final String MULTICAST_IP_ADDRESS = "228.5.6.7";
-
 	private GlobalManager() {
-		tracker = new Tracker();	
+		tracker = new Tracker( );
 	}
 	
 	public void start () 
@@ -29,7 +27,7 @@ public class GlobalManager {
 
 	public static GlobalManager getInstance() {
 		if (instance == null) {
-			instance = new GlobalManager();
+			instance = new GlobalManager( );
 		}
 		return instance;
 	}
@@ -40,5 +38,13 @@ public class GlobalManager {
 
 	public void setTracker(Tracker tracker) {
 		this.tracker = tracker;
+	}
+	
+	public void connect ( String ip, int port , String id )
+	{
+		tracker.setId(id);
+		tracker.setPort(port);
+		tracker.setIpAddress(ip);
+		start();
 	}
 }

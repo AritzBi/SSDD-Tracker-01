@@ -153,7 +153,7 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 				if ( controller.checkIpAddress(txtIpAddress.getText()))
 				{
 					//Si la IP es correcta, se conecta el tracker
-					controller.connect(ipAddress, port, (String) spinnerId.getValue());
+					controller.connect(ipAddress, Integer.parseInt(port), (String) spinnerId.getValue());
 					btnForceError.setEnabled(true);
 					btnStart.setVisible(false);
 					btnStop.setVisible(true);

@@ -16,45 +16,41 @@ import java.util.Observer;
 //TODO Cuando quitar un tracker
 //TODO  Recibir mensaje de los demás trackers 
 
-public class RedundancyManager  implements Runnable {
+public class RedundancyManager implements Runnable {
 
 	private List<Observer> observers;
 	private GlobalManager globalManager;
 	private MulticastSocket socket;
+	private InetAddress inetAddress;
 	private boolean stop = false;
-	
-	private static final int port = 48900;
-	
-	public RedundancyManager ()
-	{
+
+	public RedundancyManager() {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
-		
-		InetAddress inetAddress;
+	}
+	
+	private void generateSocket() {
 		try {
-			socket = new MulticastSocket(port);
-			inetAddress = InetAddress.getByName( globalManager.MULTICAST_IP_ADDRESS);
+			socket = new MulticastSocket(globalManager.getTracker().getPort());
+			inetAddress = InetAddress
+					.getByName(globalManager.getTracker().getIpAddress());
 			socket.joinGroup(inetAddress);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
 	}
-	
-	private void socketListening () {
+
+	private void listeningSocket() {
 		try {
 
-			
 			DatagramPacket packet;
-			while ( !stop )
-			{
+			while (!stop) {
 				byte[] buf = new byte[256];
 				packet = new DatagramPacket(buf, buf.length);
 				socket.receive(packet);
-				
-				String messageReceived = new String( packet.getData() );
+
+				String messageReceived = new String(packet.getData());
 				System.out.println("Received info..." + messageReceived);
 			}
 		} catch (IOException e) {
@@ -81,34 +77,54 @@ public class RedundancyManager  implements Runnable {
 		}
 	}
 
-	/***[END] OBSERVABLE PATTERN IMPLEMENTATION **/
-	
+	/*** [END] OBSERVABLE PATTERN IMPLEMENTATION **/
+
 	public void desconectar() {
 		this.notifyObservers(null);
 	}
-	
-	public void sendKeepAlive () {
-		InetAddress inetAddress = null;
-		try {
-			inetAddress = InetAddress.getByName(GlobalManager.MULTICAST_IP_ADDRESS);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
 
-		String message = globalManager.getTracker().getId() + "KeepAlive";
-		byte[] messageBytes = message.getBytes();
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes, messageBytes.length, inetAddress, 4878);
+	private synchronized void writeSocket(DatagramPacket datagramPacket) {
 		try {
 			socket.send(datagramPacket);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
+	private String getKeepAliveMessage() {
+		return globalManager.getTracker().getId() + "KeepAlive";
+	}
+
+	public void sendKeepAlive() {
+
+		String message = getKeepAliveMessage();
+		byte[] messageBytes = message.getBytes();
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+				messageBytes.length, inetAddress, globalManager.getTracker().getPort());
+		writeSocket(datagramPacket);
+	}
+
+	public void generateThreadToSendKeepAliveMessages() {
+		Thread t = new Thread() {
+			public void run() {
+				while (true) {
+					try {
+						Thread.sleep(2000);
+						sendKeepAlive();
+					} catch (InterruptedException e) {
+					}
+
+				}
+			}
+		};
+		t.start();
+	}
+
 	@Override
 	public void run() {
-		System.out.println("Llamo Redundancy Manager");
-		//socketListening();
+		generateSocket();
+		generateThreadToSendKeepAliveMessages();
+		listeningSocket();
 		sendKeepAlive();
 	}
 

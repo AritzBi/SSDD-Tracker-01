@@ -7,16 +7,18 @@ public class Tracker {
 
 	private String id;
 	private String ipAddress;
-	private String port;
+	private int port;
 	private List<Tracker> trackersActivos;
 	
 	public Tracker () {
 		
 	}
 	
-	public Tracker ( String id )
+	public Tracker ( String id, String ipAddress, int port )
 	{
 		this.id = id;
+		this.ipAddress = ipAddress;
+		this.port = port;
 		trackersActivos = new ArrayList<Tracker>();
 	}
 	
@@ -42,11 +44,11 @@ public class Tracker {
 		this.ipAddress = ipAddress;
 	}
 
-	public String getPort() {
+	public int getPort() {
 		return port;
 	}
 
-	public void setPort(String port) {
+	public void setPort(int port) {
 		this.port = port;
 	}
 

@@ -12,7 +12,7 @@ public class UDPManager implements Runnable {
 
 	private List<Observer> observers;
 	private GlobalManager globalManager;
-	
+
 	private MulticastSocket socket;
 	private InetAddress inetAddress;
 	private boolean stopListeningPackets = false;
@@ -27,11 +27,13 @@ public class UDPManager implements Runnable {
 		createSocket();
 		socketListeningPackets();
 	}
-	
+
 	private void createSocket() {
 		try {
-			socket = new MulticastSocket(globalManager.getTracker().getPortForPeers());
-			inetAddress = InetAddress.getByName(globalManager.getTracker().getIpAddress());
+			socket = new MulticastSocket(globalManager.getTracker()
+					.getPortForPeers());
+			inetAddress = InetAddress.getByName(globalManager.getTracker()
+					.getIpAddress());
 			socket.joinGroup(inetAddress);
 		} catch (IOException e) {
 			System.out.println("Error creating socket " + e.getMessage());
@@ -47,7 +49,15 @@ public class UDPManager implements Runnable {
 				System.out.println("Before socket");
 				socket.receive(packet);
 				System.out.println("Post socket");
-
+				if (isConnectRequestMessage(packet))
+				{
+					//New thread to send a response
+				}
+				else if (isAnnounceRequestMessage (packet ))
+				{
+					//New thread to send the associated response message
+				}
+				
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received message: " + messageReceived);
 			}
@@ -55,7 +65,29 @@ public class UDPManager implements Runnable {
 			e.printStackTrace();
 		}
 	}
-	
+
+	/**
+	 * Method used to know if the received UDP packet is a connect request
+	 * message
+	 * 
+	 * @param packet
+	 * @return
+	 */
+	private boolean isConnectRequestMessage(DatagramPacket packet) {
+		return true;
+	}
+
+	/**
+	 * Method used to know if the received UDP packet is an announce request
+	 * message
+	 * 
+	 * @param packet
+	 * @return
+	 */
+	private boolean isAnnounceRequestMessage(DatagramPacket packet) {
+		return true;
+	}
+
 	/**
 	 * Method used to write over the socket
 	 * 
@@ -91,7 +123,7 @@ public class UDPManager implements Runnable {
 	}
 
 	/*** [END] OBSERVABLE PATTERN IMPLEMENTATION **/
-	
+
 	// TODO
 	public void receiveConnectionRequest(DatagramPacket packet) {
 	}
@@ -107,5 +139,5 @@ public class UDPManager implements Runnable {
 	// TODO
 	public void sendAnnounceResponse(DatagramPacket packet) {
 	}
-	
+
 }

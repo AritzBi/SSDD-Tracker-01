@@ -24,6 +24,8 @@ public class RedundancyManager implements Runnable {
 	private InetAddress inetAddress;
 	private boolean stopListeningPackets = false;
 	private boolean stopThreadKeepAlive = false;
+	
+	private static String TYPE_KEEP_ALIVE_MESSAGE = "KeepAlive";
 
 	public RedundancyManager() {
 		observers = new ArrayList<Observer>();
@@ -66,7 +68,7 @@ public class RedundancyManager implements Runnable {
 
 	private void sendKeepAliveMessage() {
 
-		String message = getKeepAliveMessage();
+		String message = generateKeepAliveMessage();
 		byte[] messageBytes = message.getBytes();
 		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
 				messageBytes.length, inetAddress, globalManager.getTracker()
@@ -74,8 +76,8 @@ public class RedundancyManager implements Runnable {
 		writeSocket(datagramPacket);
 	}
 	
-	private String getKeepAliveMessage() {
-		return globalManager.getTracker().getId() + "KeepAlive";
+	private String generateKeepAliveMessage() {
+		return globalManager.getTracker().getId() + ":" + TYPE_KEEP_ALIVE_MESSAGE;
 	}
 
 	private void socketListeningPackets() {
@@ -86,12 +88,24 @@ public class RedundancyManager implements Runnable {
 				packet = new DatagramPacket(buf, buf.length);
 				socket.receive(packet);
 
+				if ( isKeepAliveMessage(packet) )
+				{
+					//Add a new active tracker
+					//Notify to the observers to change the list..
+					//the id is less than mine..
+				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received info..." + messageReceived);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private boolean isKeepAliveMessage ( DatagramPacket packet )
+	{
+		String [] message = new String(packet.getData()).split(";");
+		return message[1].equals(TYPE_KEEP_ALIVE_MESSAGE);
 	}
 
 	/**

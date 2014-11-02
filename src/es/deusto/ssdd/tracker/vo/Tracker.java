@@ -11,7 +11,7 @@ public class Tracker {
 	private int port;
 	//PortForPeers --> port for communication between peer to tracker
 	private int portForPeers;
-	private List<Tracker> trackersActivos;
+	private List<ActiveTracker> trackersActivos;
 	
 	public Tracker () {
 	}
@@ -22,13 +22,18 @@ public class Tracker {
 		this.ipAddress = ipAddress;
 		this.port = port;
 		this.portForPeers = portForPeers;
-		trackersActivos = new ArrayList<Tracker>();
+		trackersActivos = new ArrayList<ActiveTracker>();
 	}
 	
-	public Tracker ( String id , List<Tracker> trackersActivos )
+	public Tracker ( String id , List<ActiveTracker> trackersActivos )
 	{
 		this.id = id;
 		this.trackersActivos = trackersActivos;
+	}
+	
+	public void addActiveTracker ( ActiveTracker activeTracker )
+	{
+		trackersActivos.add ( activeTracker );
 	}
 
 	public String getId() {
@@ -63,11 +68,11 @@ public class Tracker {
 		this.portForPeers = portForPeers;
 	}
 
-	public List<Tracker> getTrackersActivos() {
+	public List<ActiveTracker> getTrackersActivos() {
 		return trackersActivos;
 	}
 
-	public void setTrackersActivos(List<Tracker> trackersActivos) {
+	public void setTrackersActivos(List<ActiveTracker> trackersActivos) {
 		this.trackersActivos = trackersActivos;
 	}
 	

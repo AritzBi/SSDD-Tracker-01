@@ -5,8 +5,12 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Observer;
+import java.util.concurrent.ConcurrentHashMap;
+
+import es.deusto.ssdd.tracker.vo.ActiveTracker;
 
 //TODO: Proceso de elección del master
 //TODO: Enviar keep alive
@@ -24,6 +28,7 @@ public class RedundancyManager implements Runnable {
 	private InetAddress inetAddress;
 	private boolean stopListeningPackets = false;
 	private boolean stopThreadKeepAlive = false;
+	private boolean stopThreadCheckerKeepAlive = false;
 	
 	private static String TYPE_KEEP_ALIVE_MESSAGE = "KeepAlive";
 
@@ -37,6 +42,7 @@ public class RedundancyManager implements Runnable {
 		createSocket();
 		generateThreadToSendKeepAliveMessages();
 		socketListeningPackets();
+		generateThreadToCheckActiveTrackers();
 	}
 
 	private void createSocket() {
@@ -90,6 +96,7 @@ public class RedundancyManager implements Runnable {
 
 				if ( isKeepAliveMessage(packet) )
 				{
+					saveActiveTracker ( packet ); //TODO:POSSIBLE THREAD?
 					//Add a new active tracker
 					//Notify to the observers to change the list..
 					//the id is less than mine..
@@ -102,10 +109,122 @@ public class RedundancyManager implements Runnable {
 		}
 	}
 	
+	private void saveActiveTracker ( DatagramPacket packet )
+	{
+		String[] messageReceived = new String ( packet.getData() ).split(":");
+		String id = messageReceived[0];
+		//Check if the id is not equals to the master tracker ID
+		if ( !id.equals(globalManager.getTracker().getId() ) )
+		{
+			ConcurrentHashMap<String,ActiveTracker> activeTrackers = globalManager.getTracker().getTrackersActivos();
+			if ( activeTrackers.contains(id ) )
+			{
+				ActiveTracker activeTracker = activeTrackers.get(id);
+				activeTracker.setLastKeepAlive(new Date());
+			}
+			else
+			{
+				if ( globalManager.getTracker().isMaster()) //If the tracker is master tracker
+				{
+					List<String> idsActiveTrackers = getListActiveTrackers();
+					if ( id.compareTo(globalManager.getTracker().getId()) == 1 && !idsActiveTrackers.contains(id) )
+					{
+						ActiveTracker activeTracker = new ActiveTracker();
+						activeTracker.setActive(true);
+						activeTracker.setId(id);
+						activeTracker.setLastKeepAlive(new Date() );
+						activeTracker.setMaster(false);
+						//Add the new active tracker to the list
+						globalManager.getTracker().addActiveTracker(activeTracker);
+						//Notify to the observers to update the UI
+						this.notifyObservers( new String("New Active Tracker") );
+					}
+				}
+			}
+		}
+		
+	}
+	
+	private List<String> getListActiveTrackers()
+	{
+		List<String> activeTrackers = new ArrayList<String>();
+	
+		for ( ActiveTracker activeTracker : globalManager.getTracker().getTrackersActivos().values() )
+		{
+			activeTrackers.add(activeTracker.getId());
+		}
+		return activeTrackers;
+		
+	}
+	
 	private boolean isKeepAliveMessage ( DatagramPacket packet )
 	{
-		String [] message = new String(packet.getData()).split(";");
+		String [] message = new String(packet.getData()).split(":");
 		return message[1].equals(TYPE_KEEP_ALIVE_MESSAGE);
+	}
+	
+	private void generateThreadToCheckActiveTrackers ( )
+	{
+		Thread threadCheckKeepAliveMessages = new Thread() {
+			
+			public void run() {
+				try {
+					Thread.sleep(4000);
+					electMasterInitiating();
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				
+				while (!stopThreadCheckerKeepAlive) {
+					try {
+						Thread.sleep(4000);
+						checkActiveTrackers();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		};
+		threadCheckKeepAliveMessages.start();
+	}
+	
+	private void electMasterInitiating()
+	{
+		ConcurrentHashMap<String, ActiveTracker> mapActiveTrackers = globalManager.getTracker().getTrackersActivos();
+		if ( mapActiveTrackers.size() == 0 )
+		{
+			//Actual one is the master tracker
+			globalManager.getTracker().setMaster(true);
+		}
+		else
+		{
+			boolean enc = false;
+			Integer i = 0;
+			List<String> keysMapActiveTrackers = new ArrayList<String>(mapActiveTrackers.keySet());
+			while ( !enc && i < mapActiveTrackers.values().size() )
+			{
+				ActiveTracker activeTracker = (ActiveTracker) mapActiveTrackers.get(keysMapActiveTrackers.get(i));
+				if ( activeTracker.getId().compareTo(globalManager.getTracker().getId()) == -1 )
+				{
+					//Actual one is no the mastee tracker
+					globalManager.getTracker().setMaster(false);
+				}
+			}
+		}
+	}
+	
+	private void checkActiveTrackers() {
+		for ( ActiveTracker activeTracker : globalManager.getTracker().getTrackersActivos().values() )
+		{
+			long time = activeTracker.getLastKeepAlive().getTime();
+			long actualTime = new Date().getTime();
+			if ( actualTime - time >= 4000 )
+			{
+				//WE NEED TO CHECK IF IT IS A MASTER O NO
+				System.out.println("Borrando tracker " + activeTracker.getId() + " ...");
+				globalManager.getTracker().getTrackersActivos().remove(activeTracker);
+			}
+		}
 	}
 
 	/**

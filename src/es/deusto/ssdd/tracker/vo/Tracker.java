@@ -1,6 +1,5 @@
 package es.deusto.ssdd.tracker.vo;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Tracker {
@@ -11,7 +10,8 @@ public class Tracker {
 	private int port;
 	//PortForPeers --> port for communication between peer to tracker
 	private int portForPeers;
-	private List<ActiveTracker> trackersActivos;
+	private ConcurrentHashMap<String,ActiveTracker> trackersActivos;
+	private boolean master;
 	
 	public Tracker () {
 	}
@@ -22,10 +22,10 @@ public class Tracker {
 		this.ipAddress = ipAddress;
 		this.port = port;
 		this.portForPeers = portForPeers;
-		trackersActivos = new ArrayList<ActiveTracker>();
+		trackersActivos = new ConcurrentHashMap<String,ActiveTracker>();
 	}
 	
-	public Tracker ( String id , List<ActiveTracker> trackersActivos )
+	public Tracker ( String id , ConcurrentHashMap<String,ActiveTracker> trackersActivos )
 	{
 		this.id = id;
 		this.trackersActivos = trackersActivos;
@@ -33,7 +33,7 @@ public class Tracker {
 	
 	public void addActiveTracker ( ActiveTracker activeTracker )
 	{
-		trackersActivos.add ( activeTracker );
+		trackersActivos.put ( activeTracker.getId() , activeTracker );
 	}
 
 	public String getId() {
@@ -68,12 +68,20 @@ public class Tracker {
 		this.portForPeers = portForPeers;
 	}
 
-	public List<ActiveTracker> getTrackersActivos() {
+	public ConcurrentHashMap<String,ActiveTracker> getTrackersActivos() {
 		return trackersActivos;
 	}
 
-	public void setTrackersActivos(List<ActiveTracker> trackersActivos) {
+	public void setTrackersActivos(ConcurrentHashMap<String,ActiveTracker> trackersActivos) {
 		this.trackersActivos = trackersActivos;
+	}
+
+	public boolean isMaster() {
+		return master;
+	}
+
+	public void setMaster(boolean master) {
+		this.master = master;
 	}
 	
 }

@@ -9,7 +9,6 @@ public class GlobalManager {
 	
 	private RedundancyManager redundancyManager;
 	private UDPManager udpManager;
-	
 	private GlobalManager() {
 		tracker = new Tracker();
 	}

@@ -125,6 +125,7 @@ public class RedundancyManager implements Runnable {
 		if(num == numReady){
 			readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
 			//TODO SEND the data to the rest of trackers
+			this.sendBackUp();
 		}
 		
 	}
@@ -255,7 +256,7 @@ public class RedundancyManager implements Runnable {
 	}
 	private void sendReadyToStoreMessage() {
 
-		String message = generateKeepAliveMessage();
+		String message = generateReadyToStoreMessage();
 		byte[] messageBytes = message.getBytes();
 		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
 				messageBytes.length, inetAddress, globalManager.getTracker()

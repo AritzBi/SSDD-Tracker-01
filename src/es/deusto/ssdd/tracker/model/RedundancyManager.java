@@ -253,7 +253,22 @@ public class RedundancyManager implements Runnable {
 			}
 		}
 	}
+	private void sendReadyToStoreMessage() {
 
+		String message = generateKeepAliveMessage();
+		byte[] messageBytes = message.getBytes();
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+				messageBytes.length, inetAddress, globalManager.getTracker()
+						.getPort());
+		writeSocket(datagramPacket);
+	}
+	
+	private String generateReadyToStoreMessage() {
+		return globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE;
+	}
+	private void sendBackUp(){
+		
+	}
 	/**
 	 * Method used to write over the socket
 	 * 

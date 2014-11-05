@@ -100,7 +100,7 @@ public class RedundancyManager implements Runnable {
 				if ( isKeepAliveMessage(packet) )
 				{
 					saveActiveTracker ( packet ); //TODO:POSSIBLE THREAD?
-					//Notify to the observers to change the list..
+					
 				}else if(isReadyToStore(packet)){
 					if(globalManager.getTracker().isMaster())
 						checkIfAllAreReadyToStore(packet);
@@ -184,6 +184,7 @@ public class RedundancyManager implements Runnable {
 				try {
 					Thread.sleep(4000);
 					electMasterInitiating();
+					checkActiveTrackers();
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}

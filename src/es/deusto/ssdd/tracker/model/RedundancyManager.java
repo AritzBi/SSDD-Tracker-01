@@ -117,7 +117,16 @@ public class RedundancyManager implements Runnable {
 		String[] messageReceived = new String ( packet.getData() ).split(":");
 		String id = messageReceived[0];
 		readyToStoreTrackers.put(id, true);
-		//BUCLE
+		int numReady=0;
+		for ( Boolean bool : readyToStoreTrackers.values() ){
+			if(bool)
+				numReady++;
+		}
+		if(num == numReady){
+			readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
+			//TODO SEND the data to the rest of trackers
+		}
+		
 	}
 	private boolean isReadyToStore(DatagramPacket packet){
 		String [] message = new String(packet.getData()).split(":");

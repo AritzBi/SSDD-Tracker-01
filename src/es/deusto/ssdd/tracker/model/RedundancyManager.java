@@ -29,12 +29,15 @@ public class RedundancyManager implements Runnable {
 	private boolean stopListeningPackets = false;
 	private boolean stopThreadKeepAlive = false;
 	private boolean stopThreadCheckerKeepAlive = false;
-	
+	private ConcurrentHashMap<String,Boolean> readyToStoreTrackers;
 	private static String TYPE_KEEP_ALIVE_MESSAGE = "KeepAlive";
+	private static String READY_TO_STORE_MESSAGE = "ReadyToStore";
 
 	public RedundancyManager() {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
+		readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
+		
 	}
 
 	@Override
@@ -97,9 +100,10 @@ public class RedundancyManager implements Runnable {
 				if ( isKeepAliveMessage(packet) )
 				{
 					saveActiveTracker ( packet ); //TODO:POSSIBLE THREAD?
-					//Add a new active tracker
 					//Notify to the observers to change the list..
-					//the id is less than mine..
+				}else if(isReadyToStore(packet)){
+					if(globalManager.getTracker().isMaster())
+						checkIfAllAreReadyToStore(packet);
 				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received info..." + messageReceived);
@@ -108,7 +112,17 @@ public class RedundancyManager implements Runnable {
 			e.printStackTrace();
 		}
 	}
-	
+	private void checkIfAllAreReadyToStore(DatagramPacket packet){
+		int num=globalManager.getTracker().getTrackersActivos().size();
+		String[] messageReceived = new String ( packet.getData() ).split(":");
+		String id = messageReceived[0];
+		readyToStoreTrackers.put(id, true);
+		//BUCLE
+	}
+	private boolean isReadyToStore(DatagramPacket packet){
+		String [] message = new String(packet.getData()).split(":");
+		return message[1].equals(READY_TO_STORE_MESSAGE);
+	}
 	private void saveActiveTracker ( DatagramPacket packet )
 	{
 		String[] messageReceived = new String ( packet.getData() ).split(":");
@@ -162,7 +176,6 @@ public class RedundancyManager implements Runnable {
 		String [] message = new String(packet.getData()).split(":");
 		return message[1].equals(TYPE_KEEP_ALIVE_MESSAGE);
 	}
-	
 	private void generateThreadToCheckActiveTrackers ( )
 	{
 		Thread threadCheckKeepAliveMessages = new Thread() {
@@ -220,8 +233,12 @@ public class RedundancyManager implements Runnable {
 			long actualTime = new Date().getTime();
 			if ( actualTime - time >= 4000 )
 			{
-				//WE NEED TO CHECK IF IT IS A MASTER O NO
+				
 				System.out.println("Borrando tracker " + activeTracker.getId() + " ...");
+				if(activeTracker.isMaster()){
+					System.out.println("The Master is going to be removedS");
+					//TODO Token ring process
+				}
 				globalManager.getTracker().getTrackersActivos().remove(activeTracker);
 			}
 		}

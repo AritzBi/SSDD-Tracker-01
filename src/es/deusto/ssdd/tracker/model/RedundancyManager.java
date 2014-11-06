@@ -11,6 +11,7 @@ import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import es.deusto.ssdd.tracker.vo.ActiveTracker;
+import es.deusto.ssdd.tracker.vo.Tracker;
 
 //TODO: Proceso de elecci√≥n del master
 //TODO: Enviar keep alive
@@ -34,6 +35,7 @@ public class RedundancyManager implements Runnable {
 	private static String READY_TO_STORE_MESSAGE = "ReadyToStore";
 
 	public RedundancyManager() {
+		System.out.println("Se genera una nueva instancia");
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
 		readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
@@ -44,8 +46,9 @@ public class RedundancyManager implements Runnable {
 	public void run() {
 		createSocket();
 		generateThreadToSendKeepAliveMessages();
-		socketListeningPackets();
 		generateThreadToCheckActiveTrackers();
+		socketListeningPackets();
+		
 	}
 
 	private void createSocket() {
@@ -64,7 +67,7 @@ public class RedundancyManager implements Runnable {
 			public void run() {
 				while (!stopThreadKeepAlive) {
 					try {
-						Thread.sleep(2000);
+						Thread.sleep(4000);
 						sendKeepAliveMessage();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
@@ -86,7 +89,7 @@ public class RedundancyManager implements Runnable {
 	}
 	
 	private String generateKeepAliveMessage() {
-		return globalManager.getTracker().getId() + ":" + TYPE_KEEP_ALIVE_MESSAGE;
+		return getTracker().getId() + ":" + getTracker().isMaster() + ":" + TYPE_KEEP_ALIVE_MESSAGE + ":";
 	}
 
 	private void socketListeningPackets() {
@@ -99,7 +102,8 @@ public class RedundancyManager implements Runnable {
 
 				if ( isKeepAliveMessage(packet) )
 				{
-					saveActiveTracker ( packet ); //TODO:POSSIBLE THREAD?
+					System.out.println("Me ha venido un keep alive message... " + " Soy tracker " + getTracker().getId());
+					saveActiveTracker ( packet );
 					
 				}else if(isReadyToStore(packet)){
 					if(globalManager.getTracker().isMaster())
@@ -133,36 +137,56 @@ public class RedundancyManager implements Runnable {
 		String [] message = new String(packet.getData()).split(":");
 		return message[1].equals(READY_TO_STORE_MESSAGE);
 	}
+	
+	private boolean getBoolean ( String condicion )
+	{
+		if ( condicion.equals("true") )
+			return true;
+		else if (condicion.equals("false") )
+			return false;
+		return false;
+	}
 	private void saveActiveTracker ( DatagramPacket packet )
 	{
 		String[] messageReceived = new String ( packet.getData() ).split(":");
 		String id = messageReceived[0];
-		//Check if the id is not equals to the master tracker ID
+		String master = messageReceived[1];
+		System.out.println("Viene id: " + id + " se comprueba con " +  globalManager.getTracker().getId() );
 		if ( !id.equals(globalManager.getTracker().getId() ) )
 		{
+			System.out.println("Id diferente a la del tracker..");
 			ConcurrentHashMap<String,ActiveTracker> activeTrackers = globalManager.getTracker().getTrackersActivos();
-			if ( activeTrackers.contains(id ) )
+			System.out.println("Active Trackers..." + getTracker().getTrackersActivos().values().toString() +  " para tracker " + getTracker().getId());
+			if ( activeTrackers.containsKey(id ) )
 			{
 				ActiveTracker activeTracker = activeTrackers.get(id);
 				activeTracker.setLastKeepAlive(new Date());
+				activeTracker.setMaster(getBoolean(master));
+				this.notifyObservers( new String("NewActiveTracker") );
 			}
 			else
 			{
+				boolean continuar = true;
 				if ( globalManager.getTracker().isMaster()) //If the tracker is master tracker
 				{
 					List<String> idsActiveTrackers = getListActiveTrackers();
-					if ( id.compareTo(globalManager.getTracker().getId()) == 1 && !idsActiveTrackers.contains(id) )
+					if ( id.compareTo(globalManager.getTracker().getId()) == -1 )
 					{
-						ActiveTracker activeTracker = new ActiveTracker();
-						activeTracker.setActive(true);
-						activeTracker.setId(id);
-						activeTracker.setLastKeepAlive(new Date() );
-						activeTracker.setMaster(false);
-						//Add the new active tracker to the list
-						globalManager.getTracker().addActiveTracker(activeTracker);
-						//Notify to the observers to update the UI
-						this.notifyObservers( new String("New Active Tracker") );
+						continuar = false;
 					}
+				}
+				if ( continuar ) {
+					ActiveTracker activeTracker = new ActiveTracker();
+					activeTracker.setActive(true);
+					activeTracker.setId(id);
+					activeTracker.setLastKeepAlive(new Date() );
+					System.out.println("Me viene de master... " + master + Boolean.getBoolean(master) + " para tracker " + id);
+					activeTracker.setMaster(Boolean.getBoolean(master));
+					//Add the new active tracker to the list
+					globalManager.getTracker().addActiveTracker(activeTracker);
+					System.out.println("Anyadimos a la lisa un nuevo tracker activo");
+					//Notify to the observers to update the UI
+					this.notifyObservers( new String("NewActiveTracker") );
 				}
 			}
 		}
@@ -184,7 +208,7 @@ public class RedundancyManager implements Runnable {
 	private boolean isKeepAliveMessage ( DatagramPacket packet )
 	{
 		String [] message = new String(packet.getData()).split(":");
-		return message[1].equals(TYPE_KEEP_ALIVE_MESSAGE);
+		return message[2].equals(TYPE_KEEP_ALIVE_MESSAGE);
 	}
 	private void generateThreadToCheckActiveTrackers ( )
 	{
@@ -192,16 +216,20 @@ public class RedundancyManager implements Runnable {
 			
 			public void run() {
 				try {
-					Thread.sleep(4000);
-					electMasterInitiating();
-					checkActiveTrackers();
+					System.out.println("Vamos a esperar 8 segundos");
+					Thread.sleep(8000);
+					if ( !stopThreadCheckerKeepAlive )
+					{
+						electMasterInitiating();
+						checkActiveTrackers();	
+					}
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
 				
 				while (!stopThreadCheckerKeepAlive) {
 					try {
-						Thread.sleep(4000);
+						Thread.sleep(8000);
 						checkActiveTrackers();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
@@ -214,11 +242,13 @@ public class RedundancyManager implements Runnable {
 	
 	private void electMasterInitiating()
 	{
+		System.out.println("Entro en la eleccion del master");
 		ConcurrentHashMap<String, ActiveTracker> mapActiveTrackers = globalManager.getTracker().getTrackersActivos();
+		System.out.println("Miramos el map de Trackers Activos..." + mapActiveTrackers.toString() );
 		if ( mapActiveTrackers.size() == 0 )
 		{
-			//Actual one is the master tracker
-			globalManager.getTracker().setMaster(true);
+			System.out.println("Al no existir m·s trackers, el tracker" + getTracker().getId() + "es el MASTER");
+			getTracker().setMaster(true);
 		}
 		else
 		{
@@ -228,17 +258,24 @@ public class RedundancyManager implements Runnable {
 			while ( !enc && i < mapActiveTrackers.values().size() )
 			{
 				ActiveTracker activeTracker = (ActiveTracker) mapActiveTrackers.get(keysMapActiveTrackers.get(i));
-				if ( activeTracker.getId().compareTo(globalManager.getTracker().getId()) == -1 )
+				if ( activeTracker.getId().compareTo( getTracker().getId()) == -1 )
 				{
-					//Actual one is no the mastee tracker
-					globalManager.getTracker().setMaster(false);
+					System.out.println("Encuentro un tracker menor que yo (" + getTracker().getId() + ") que es " +  activeTracker.getId() );
+					//Actual one is no the master tracker
+					getTracker().setMaster(false);
+					enc = true;
 				}
 			}
+			if ( !enc )
+			{
+				getTracker().setMaster(true);
+			}
+			
 		}
 	}
 	
 	private void checkActiveTrackers() {
-		for ( ActiveTracker activeTracker : globalManager.getTracker().getTrackersActivos().values() )
+		for ( ActiveTracker activeTracker : getTracker().getTrackersActivos().values() )
 		{
 			long time = activeTracker.getLastKeepAlive().getTime();
 			long actualTime = new Date().getTime();
@@ -250,7 +287,8 @@ public class RedundancyManager implements Runnable {
 					System.out.println("The Master is going to be removedS");
 					//TODO Token ring process
 				}
-				globalManager.getTracker().getTrackersActivos().remove(activeTracker);
+				globalManager.getTracker().getTrackersActivos().remove(activeTracker.getId());
+				this.notifyObservers(new String ("DeleteActiveTracker"));
 			}
 		}
 	}
@@ -265,7 +303,7 @@ public class RedundancyManager implements Runnable {
 	}
 	
 	private String generateReadyToStoreMessage() {
-		return globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE;
+		return globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE + ":";
 	}
 	private void sendBackUp(){
 		
@@ -286,6 +324,7 @@ public class RedundancyManager implements Runnable {
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
 	public void addObserver(Observer o) {
 		if (o != null && !this.observers.contains(o)) {
+			System.out.println("Se aÒade un nuevo observador");
 			this.observers.add(o);
 		}
 	}
@@ -295,6 +334,7 @@ public class RedundancyManager implements Runnable {
 	}
 
 	private void notifyObservers(Object param) {
+		System.out.println("Lista observers: " + observers);
 		for (Observer observer : this.observers) {
 			if (observer != null) {
 				observer.update(null, param);
@@ -322,5 +362,17 @@ public class RedundancyManager implements Runnable {
 
 	public void setStopThreadKeepAlive(boolean stopThreadKeepAlive) {
 		this.stopThreadKeepAlive = stopThreadKeepAlive;
+	}
+
+	public boolean isStopThreadCheckerKeepAlive() {
+		return stopThreadCheckerKeepAlive;
+	}
+
+	public void setStopThreadCheckerKeepAlive(boolean stopThreadCheckerKeepAlive) {
+		this.stopThreadCheckerKeepAlive = stopThreadCheckerKeepAlive;
+	}
+	
+	private Tracker getTracker() {
+		return globalManager.getTracker();
 	}
 }

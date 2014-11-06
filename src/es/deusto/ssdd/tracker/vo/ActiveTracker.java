@@ -8,6 +8,7 @@ public class ActiveTracker {
 	private boolean active;
 	private Date lastKeepAlive;
 	private boolean master;
+	public static final int numColumns = 4;
 	public String getId() {
 		return id;
 	}
@@ -31,5 +32,9 @@ public class ActiveTracker {
 	}
 	public void setMaster(boolean master) {
 		this.master = master;
+	}
+	@Override
+	public String toString() {
+		return "Id: " + id + "master: " + master;
 	}
 }

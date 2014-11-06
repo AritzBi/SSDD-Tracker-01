@@ -6,7 +6,6 @@ import java.util.regex.Pattern;
 
 import es.deusto.ssdd.tracker.model.GlobalManager;
 import es.deusto.ssdd.tracker.model.UDPManager;
-import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class ConfigurationController {
 	private UDPManager udpManager;
@@ -58,6 +57,11 @@ public class ConfigurationController {
 		return matcher.matches();
 	}
 	
+	/**
+	 * Method used to disconnect the tracker
+	 */
 	public void disconnect() {
+		//We need to stop all the running threads on the tracker
+		globalManager.disconnect();
 	}
 }

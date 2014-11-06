@@ -140,4 +140,11 @@ public class UDPManager implements Runnable {
 	public void sendAnnounceResponse(DatagramPacket packet) {
 	}
 
+	public boolean isStopListeningPackets() {
+		return stopListeningPackets;
+	}
+
+	public void setStopListeningPackets(boolean stopListeningPackets) {
+		this.stopListeningPackets = stopListeningPackets;
+	}
 }

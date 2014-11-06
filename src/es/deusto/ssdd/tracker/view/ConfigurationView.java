@@ -22,7 +22,8 @@ import javax.swing.SpinnerListModel;
 
 import es.deusto.ssdd.tracker.controller.ConfigurationController;
 
-public class ConfigurationView extends JPanel implements Observer, ActionListener {
+public class ConfigurationView extends JPanel implements Observer,
+		ActionListener {
 	/**
 	 * 
 	 */
@@ -55,14 +56,14 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 
 	private void setUpPanel() {
 		// Specify the labels
-		lblIpAddress = new Label("IP address" );
-		lblIpAddress.setFont(new Font ( "Serif", Font.BOLD , 14 ));
+		lblIpAddress = new Label("IP address");
+		lblIpAddress.setFont(new Font("Serif", Font.BOLD, 14));
 		lblPort = new Label("Port (Trackers)");
-		lblPort.setFont(new Font ( "Serif", Font.BOLD , 14 ));
+		lblPort.setFont(new Font("Serif", Font.BOLD, 14));
 		lblPortForPeers = new Label("Port (Peers)");
-		lblPortForPeers.setFont(new Font ( "Serif", Font.BOLD , 14 ));
+		lblPortForPeers.setFont(new Font("Serif", Font.BOLD, 14));
 		lblId = new Label("Id");
-		lblId.setFont(new Font ( "Serif", Font.BOLD , 14 ));
+		lblId.setFont(new Font("Serif", Font.BOLD, 14));
 
 		// Specify the box for IP ADDRESS
 		Box boxForIpAddress = Box.createVerticalBox();
@@ -83,14 +84,14 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 				.getPreferredSize().height));
 		boxForPort.add(txtPort);
 		boxForPort.add(Box.createVerticalGlue());
-		
+
 		// Specify the box for PORT FOR PEERS
 		Box boxForPortForPeers = Box.createVerticalBox();
 		boxForPortForPeers.add(Box.createVerticalGlue());
 		txtPortForPeers = new JTextField();
 		txtPortForPeers.setColumns(20);
-		txtPortForPeers.setMaximumSize(new Dimension(Integer.MAX_VALUE, txtPortForPeers
-				.getPreferredSize().height));
+		txtPortForPeers.setMaximumSize(new Dimension(Integer.MAX_VALUE,
+				txtPortForPeers.getPreferredSize().height));
 		boxForPortForPeers.add(txtPortForPeers);
 		boxForPortForPeers.add(Box.createVerticalGlue());
 
@@ -113,7 +114,7 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		JPanel panelPort = new JPanel(new GridLayout(1, 0));
 		panelPort.add(lblPort);
 		panelPort.add(boxForPort);
-		
+
 		JPanel panelPortForPeers = new JPanel(new GridLayout(1, 0));
 		panelPortForPeers.add(lblPortForPeers);
 		panelPortForPeers.add(boxForPortForPeers);
@@ -137,7 +138,7 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 		btnForceError = new JButton("Force Error");
 		btnForceError.addActionListener(this);
 		btnForceError.setEnabled(false);
-		
+
 		JPanel buttonPane = new JPanel(new FlowLayout());
 		buttonPane.add(btnStart);
 		buttonPane.add(btnStop);
@@ -162,44 +163,42 @@ public class ConfigurationView extends JPanel implements Observer, ActionListene
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if ( e.getSource().equals(btnStart) )
-		{
+		if (e.getSource().equals(btnStart)) {
 			String ipAddress = txtIpAddress.getText();
 			String port = txtPort.getText();
 			String portForPeers = txtPortForPeers.getText();
 			String message = "";
-			if ( ipAddress != null && !ipAddress.equals("") && port!= null && !port.equals("") && portForPeers != null && !portForPeers.equals("") )
-			{
-				if ( controller.checkIpAddress(txtIpAddress.getText()))
-				{
-					//Si la IP es correcta, se conecta el tracker
-					controller.connect(ipAddress, Integer.parseInt(port), Integer.parseInt(portForPeers) , (String) spinnerId.getValue());
+			if (ipAddress != null && !ipAddress.equals("") && port != null
+					&& !port.equals("") && portForPeers != null
+					&& !portForPeers.equals("")) {
+				if (controller.checkIpAddress(txtIpAddress.getText())) {
+					// Si la IP es correcta, se conecta el tracker
+					controller.connect(ipAddress, Integer.parseInt(port),
+							Integer.parseInt(portForPeers),
+							(String) spinnerId.getValue());
 					btnForceError.setEnabled(true);
 					btnStart.setVisible(false);
 					btnStop.setVisible(true);
+				} else {
+					message = "The specified IP ( " + txtIpAddress.getText()
+							+ " ) is not a correct IP address";
 				}
-				else
-				{
-					message = "The specified IP ( " + txtIpAddress.getText() + " ) is not a correct IP address";
-				}
-			}
-			else
-			{
+			} else {
 				message = "You have to specify a value for all fields";
 			}
 
-			if ( message != "" )
-			{
+			if (message != "") {
 				JOptionPane.showMessageDialog(null, message);
 			}
-		
-		}
-		else if ( e.getSource().equals(btnForceError))
-		{
-			
+
+		} else if (e.getSource().equals(btnStop)) {
+			controller.disconnect();
+			btnForceError.setEnabled(false);
+			btnStart.setVisible(true);
+			btnStop.setVisible(false);
 		}
 	}
-	
+
 	@Override
 	public void update(Observable o, Object arg) {
 

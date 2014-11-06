@@ -34,6 +34,9 @@ public class MainProgram {
 		RedundancyManager redundancyManager = new RedundancyManager();
 		TrackerListController trackerListController = new TrackerListController( redundancyManager );
 		TrackerListView trackerListView = new TrackerListView(trackerListController);
+	
+		globalManager.setRedundancyManager(redundancyManager);
+		globalManager.setUdpManager(udpManager);
 		
 		Map<String,JPanel> panels = new HashMap<String,JPanel>();
 		panels.put ("Configuration" , configurationView );

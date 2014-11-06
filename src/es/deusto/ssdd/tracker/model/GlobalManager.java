@@ -1,5 +1,10 @@
 package es.deusto.ssdd.tracker.model;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import es.deusto.ssdd.tracker.vo.ActiveTracker;
 import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class GlobalManager {
@@ -18,8 +23,6 @@ public class GlobalManager {
 	 */
 	public void start() 
 	{
-		redundancyManager = new RedundancyManager();
-		udpManager = new UDPManager();
 		new Thread(redundancyManager).start();
 		new Thread(udpManager).start();
 	}
@@ -57,6 +60,51 @@ public class GlobalManager {
 		tracker.setPort(port);
 		tracker.setPortForPeers(portForPeers);
 		tracker.setIpAddress(ipAddress);
+		tracker.setMaster(false);
 		start();
+	}
+	
+	/**
+	 * Method used to disconnect the tracker
+	 */
+	public void disconnect () 
+	{
+		redundancyManager.setStopListeningPackets(true);
+		redundancyManager.setStopThreadKeepAlive(true);
+		redundancyManager.setStopThreadCheckerKeepAlive(true);
+		
+		udpManager.setStopListeningPackets(true);
+	}
+	
+	public List<ActiveTracker> getActiveTrackers()
+	{
+		if ( getTracker().getTrackersActivos() != null )
+		{
+			List<ActiveTracker> listActiveTrackers = new ArrayList<ActiveTracker>();
+			Collection<ActiveTracker> activeTrackers = getTracker().getTrackersActivos().values();
+		    if ( activeTrackers != null )
+		    {
+		    	listActiveTrackers.addAll(activeTrackers);
+		    }
+		    return listActiveTrackers;
+		}
+		else
+			return new ArrayList<ActiveTracker>();
+	}
+
+	public RedundancyManager getRedundancyManager() {
+		return redundancyManager;
+	}
+
+	public void setRedundancyManager(RedundancyManager redundancyManager) {
+		this.redundancyManager = redundancyManager;
+	}
+
+	public UDPManager getUdpManager() {
+		return udpManager;
+	}
+
+	public void setUdpManager(UDPManager udpManager) {
+		this.udpManager = udpManager;
 	}
 }

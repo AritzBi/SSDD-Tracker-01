@@ -22,7 +22,7 @@ public class Tracker {
 		this.ipAddress = ipAddress;
 		this.port = port;
 		this.portForPeers = portForPeers;
-		trackersActivos = new ConcurrentHashMap<String,ActiveTracker>();
+		
 	}
 	
 	public Tracker ( String id , ConcurrentHashMap<String,ActiveTracker> trackersActivos )
@@ -69,6 +69,10 @@ public class Tracker {
 	}
 
 	public ConcurrentHashMap<String,ActiveTracker> getTrackersActivos() {
+		if (trackersActivos == null )
+		{
+			trackersActivos = new ConcurrentHashMap<String,ActiveTracker>();
+		}
 		return trackersActivos;
 	}
 

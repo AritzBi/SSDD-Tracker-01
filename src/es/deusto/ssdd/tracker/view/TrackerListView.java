@@ -3,6 +3,7 @@ package es.deusto.ssdd.tracker.view;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -12,6 +13,7 @@ import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
 import es.deusto.ssdd.tracker.controller.TrackerListController;
+import es.deusto.ssdd.tracker.vo.ActiveTracker;
 
 public class TrackerListView extends JPanel implements Observer,ActionListener{
 	/**
@@ -23,7 +25,7 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	private MyBooleanModel model;
 	private Object [][] rows;
 	public static final int numberRowsExample=20;
-	
+	private String[] columnNames = {"Tracker ID", "Active", "Last Keep Alive","Master"};
 
 	public TrackerListView ( TrackerListController trackerListController )
 	{
@@ -34,40 +36,61 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	
 	@Override
 	public void update(Observable o, Object arg) {
+		System.out.println("Llega");
+		if ( arg.equals("NewActiveTracker") || arg.equals("DeleteActiveTracker"))
+		{
+			System.out.println("ME HAN LLAMADO EL OBSERVABLE");
+			generateTrackersData();
+			model.setDataVector(rows, columnNames);
+			model.fireTableDataChanged();
+			configureSizesOfTable(table);
+			table.repaint();
+		}
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
 		
 	}
 	
 	public void createTable(){
-		String[] columnNames = {"Tracker ID", "Active", "Last Keep Alive","Master"};
-		generateTestData();
+		
+		generateTrackersData();
 		model=new MyBooleanModel();
 		model.setColumnIdentifiers(columnNames);
 		model.setDataVector(rows, columnNames);
 		table=new JTable(model);
-		table.getColumnModel().getColumn(0).setPreferredWidth(100);
-		table.getColumnModel().getColumn(1).setPreferredWidth(100);
-		table.getColumnModel().getColumn(2).setPreferredWidth(200);
-		table.getColumnModel().getColumn(3).setPreferredWidth(80);
+		configureSizesOfTable(table);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		JScrollPane scrollPane=new JScrollPane(table);
 		scrollPane.setPreferredSize(new Dimension(500,225));
 		this.add(scrollPane);
 	}
-	public void generateTestData(){
-		rows=new Object[numberRowsExample][];
+	
+	public void configureSizesOfTable( JTable table ){
+		table.getColumnModel().getColumn(0).setPreferredWidth(100);
+		table.getColumnModel().getColumn(1).setPreferredWidth(100);
+		table.getColumnModel().getColumn(2).setPreferredWidth(200);
+		table.getColumnModel().getColumn(3).setPreferredWidth(80);
+	}
+	
+	public void generateTrackersData() {
+		List<ActiveTracker> listActiveTrackers = controller.getActiveTrackers();
+		System.out.println("Lista Active Trackers actual " + listActiveTrackers.toString());
+		rows=new Object[listActiveTrackers.size()][];
 		Object []rowData;
-		for(int i=0;i<numberRowsExample;i++){
-			rowData=new Object[4];
-			rowData[0]="Tracker #"+(i+1);
-			rowData[1]="YES";
-			rowData[2]="123132437148126312";
-			rowData[3]=true;
-			rows[i]=rowData;
+		ActiveTracker tracker;
+		for ( int i=0; i < listActiveTrackers.size(); i++) {
+			tracker = listActiveTrackers.get(i);
+			if ( tracker != null )
+			{
+				rowData = new Object[ActiveTracker.numColumns];
+				rowData[0] = tracker.getId();
+				rowData[1] = tracker.isActive();
+				rowData[2] = tracker.getLastKeepAlive();
+				rowData[3] = tracker.isMaster();
+				rows[i] = rowData;
+			}
 		}
 	}
 

@@ -9,15 +9,11 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import es.deusto.ssdd.tracker.vo.ActiveTracker;
 import es.deusto.ssdd.tracker.vo.Tracker;
@@ -46,7 +42,11 @@ public class RedundancyManager implements Runnable {
 	private static String BACKUP_MESSAGE = "BackUpMessage";
 	
 	private static String PATH_SQLITE_FILE = "src/info_master.db";
-
+	private static String INICIO = "I";
+	private static String FIN = "F";
+	private byte[] ficheroDB = null;
+	private int sizeActual = 0;
+	
 	public RedundancyManager() {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
@@ -90,12 +90,15 @@ public class RedundancyManager implements Runnable {
 		threadSendKeepAliveMessages.start();
 	}
 
+	/**
+	 * Method used to listen every time packets...
+	 */
 	private void socketListeningPackets() {
 		try {
 			DatagramPacket packet;
 			while (!stopListeningPackets) {
-				byte[] buf = new byte[256];
-				//byte[] buf = new byte[4352];
+				//byte[] buf = new byte[256];
+				byte[] buf = new byte[2048];
 				packet = new DatagramPacket(buf, buf.length);
 				socket.receive(packet);
 				if ( isKeepAliveMessage(packet) )
@@ -105,35 +108,71 @@ public class RedundancyManager implements Runnable {
 				}
 				else if(isReadyToStore(packet)){
 					if(globalManager.getTracker().isMaster())
+					{
 						checkIfAllAreReadyToStore(packet);
+					}
+						
 				}
-				else
+				else if (isBackUpMessage(packet))
 				{
 					System.out.println("Me ha venido un mensaje de backup. ¿Es para mi? ");
 					String [] partsMessage = new String(packet.getData()).split("%:%");
-				String idMessage = partsMessage[0];
+					String idMessage = partsMessage[0];
+					String inicioOFin = partsMessage[1];
+					String totalBytes = partsMessage[2];
+					byte[] bytes = partsMessage[4].getBytes();
 					System.out.println("Id viene: " +  idMessage + " mi Id " + getTracker().getId() );
 					if ( idMessage.equals(getTracker().getId()))
 					{
-						String newFileName = "src/info_" + getTracker().getId() + ".db";
-						String fichero = partsMessage[2];
-						System.out.println("Escribimos el nuevo fichero 1..");
-						File fileDest = new File ( newFileName );
-						FileOutputStream file = new FileOutputStream(fileDest);
-						System.out.println("Escribimos el nuevo fichero..");
-						file.write(fichero.getBytes());
-						file.flush();
-						file.close();
+						if ( ficheroDB == null )
+						{
+							ficheroDB = new byte [Integer.valueOf(totalBytes)];
+						}
+						System.out.println("Flag I/F" + inicioOFin);
+						if (inicioOFin.equals(INICIO) )
+						{
+							anayadirAFichero ( bytes );
+						}
+						else if ( inicioOFin.equals(FIN) )
+						{
+							anayadirAFichero ( bytes );
+							String newFileName = "src/info_" + getTracker().getId() + ".db";
+							System.out.println("Escribimos el nuevo fichero 1..");
+							File fileDest = new File ( newFileName );
+							FileOutputStream file = new FileOutputStream(fileDest);
+							System.out.println("Escribimos el nuevo fichero..");
+							file.write(ficheroDB);
+							file.flush();
+							file.close();
+							ficheroDB = null;
+							sizeActual = 0;
+						}
+
 					}
 				}
-				
-
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received info..." + messageReceived);
 			}
 		} catch (IOException e) {
+			System.err.println("Error while listening packets from the socket..." );
 			e.printStackTrace();
 		}
+	}
+	
+	private void anayadirAFichero ( byte [] bytes )
+	{
+		System.out.println("Size total " + ficheroDB.length);
+		System.out.println("Byes que vienen " + new String ( bytes ) );
+		for ( byte currentByte: bytes )
+		{
+			if ( sizeActual < ficheroDB.length )
+			{
+				ficheroDB[sizeActual] = currentByte;
+				sizeActual++;	
+			}
+	
+		}
+		System.out.println("Fichero DB actual: " + new String ( ficheroDB ) );
 	}
 	private void checkIfAllAreReadyToStore(DatagramPacket packet){
 		int num=globalManager.getTracker().getTrackersActivos().size();
@@ -160,6 +199,7 @@ public class RedundancyManager implements Runnable {
 			return false;
 		return false;
 	}
+	
 	private void saveActiveTracker ( DatagramPacket packet )
 	{
 		String[] messageReceived = new String ( packet.getData() ).split(":");
@@ -258,47 +298,87 @@ public class RedundancyManager implements Runnable {
 	}
 	
 	private void sendBackUpMessage( String idTracker ){
-		String message = generateBackUpMessage( idTracker );
-		byte[] messageBytes = message.getBytes();
-		System.out.println("Size of message " + messageBytes.length );
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+		String [] message = generateBackUpMessage( idTracker );
+		for ( String currentMessage : message )
+		{
+			byte[] messageBytes = currentMessage.getBytes();
+			System.out.println("Size of message " + messageBytes.length );
+
+			DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
 				messageBytes.length, inetAddress, globalManager.getTracker()
 						.getPort());
-		writeSocket(datagramPacket);
+			writeSocket(datagramPacket);
+		}
+		
 	}
 
-	private String generateBackUpMessage( String idTracker ) {
+	private String[] generateBackUpMessage( String idTracker ) {
+		//Take the .db file of the master
 		File file = new File (PATH_SQLITE_FILE);
-		 byte[] bytes = null;
-	        FileInputStream fis = null;
-			try {
-				fis = new FileInputStream(file);
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
-	        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	        byte[] buf = new byte[1024];
-	        try {
-	            for (int readNum; (readNum = fis.read(buf)) != -1;) {
-	                bos.write(buf, 0, readNum); //no doubt here is 0
-	                //Writes len bytes from the specified byte array starting at offset off to this byte array output stream.
-	                System.out.println("read " + readNum + " bytes,");
-	            }
-	        
-	        bytes = bos.toByteArray();
-	        String mensaje = new String ( bytes );
-	        
-	        File filePrueba = new File("src/test.db");
-	        
-	        FileOutputStream fileOutputStream = new FileOutputStream(filePrueba);
-	        fileOutputStream.write(mensaje.getBytes());
-	        fileOutputStream.flush();
-	        fileOutputStream.close();
-	        } catch (IOException ex) {
-	            System.err.println("Error writing the sqlite file...");
-	            ex.printStackTrace();
-	        }
-		return idTracker + "%:%" + BACKUP_MESSAGE + "%:%" + new String ( bytes ) + "%:%";
+		byte[] bytes = null;
+	    FileInputStream fis = null;
+		try {
+			fis = new FileInputStream(file);
+		} catch (FileNotFoundException e) {
+			System.err.println("** FILE " + PATH_SQLITE_FILE + " NOT FOUND ** " + e.getMessage() );
+		}
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] buf = new byte[1024];
+        try {
+            for (int readNum; (readNum = fis.read(buf)) != -1;) {
+                bos.write(buf, 0, readNum);
+            }
+            bytes = bos.toByteArray();
+            fis.close();
+        }
+        catch (IOException e) {
+        	System.err.println("** IO EX: Error reading the file " + e.getMessage() );
+        }
+        //Calculate the length of the message
+        int messageLength = 0;
+        if ( bytes.length % 1024 ==0 )
+        {
+        	messageLength = bytes.length / 1024;
+        }
+        else
+        {
+        	messageLength = bytes.length / 1024 + 1;
+        }
+        String [] message = new String[messageLength];
+        int kMessage = 0;
+        for ( int i = 0; i < bytes.length; i = i + 1024 ) 
+        {
+        	byte [] partMessage = new byte[1024];
+        	partMessage = fillArrayBytes(i, partMessage, bytes);
+        	System.out.println("SIZE: " + new String ( partMessage ) );
+        	if ( i >= (bytes.length - 1024) )
+        	{
+        		System.out.println("EMPEZAMOS POR AQUI 2");
+        		message[kMessage] = idTracker + "%:%" + FIN + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + new String ( partMessage ) + "%:%";
+        		System.out.println("EMPEZAMOS POR AQUI 2");
+        		kMessage++;
+        	}
+        	else
+        	{
+        		System.out.println("EMPEZAMOS POR AQUI");
+        		//We put INICIO on the fragment in order to know that there are more messages
+        		message[kMessage] = idTracker + "%:%" + INICIO + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + new String ( partMessage ) + "%:%";
+        		System.out.println("EMPEZAMOS POR AQUI");
+        		kMessage++;
+        	}
+        	
+        }
+        return message;
+	}
+	
+	private byte[] fillArrayBytes ( int j , byte [] tofill, byte[] data )
+	{
+		for ( int k = 0; k < tofill.length ; k++ )
+		{
+			tofill[k] = data[j];
+			j++;
+		}
+		return tofill;
 	}
 	
 	/*** [END] SEND MESSAGES TO OTHER TRACKERS ***/
@@ -318,8 +398,8 @@ public class RedundancyManager implements Runnable {
 	
 	
 	private boolean isBackUpMessage ( DatagramPacket packet ) {
-		String [] message = new String(packet.getData()).split("%:%:");
-		return message[1].equals(BACKUP_MESSAGE);
+		String [] message = new String(packet.getData()).split("%:%");
+		return message[3].equals(BACKUP_MESSAGE);
 	}
 	
 	

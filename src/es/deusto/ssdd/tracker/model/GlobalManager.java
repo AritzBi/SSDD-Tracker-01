@@ -56,6 +56,14 @@ public class GlobalManager {
 	 */
 	public void connect ( String ipAddress, int port , int portForPeers, String id )
 	{
+		if ( id != null && !id.equals("") )
+		{
+			redundancyManager.setStopListeningPackets(false);
+			redundancyManager.setStopThreadKeepAlive(false);
+			redundancyManager.setStopThreadCheckerKeepAlive(false);
+			
+			udpManager.setStopListeningPackets(false);
+		}
 		tracker.setId(id);
 		tracker.setPort(port);
 		tracker.setPortForPeers(portForPeers);

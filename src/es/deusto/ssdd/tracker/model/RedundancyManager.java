@@ -1,14 +1,23 @@
 package es.deusto.ssdd.tracker.model;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import es.deusto.ssdd.tracker.vo.ActiveTracker;
 import es.deusto.ssdd.tracker.vo.Tracker;
@@ -33,9 +42,12 @@ public class RedundancyManager implements Runnable {
 	private ConcurrentHashMap<String,Boolean> readyToStoreTrackers;
 	private static String TYPE_KEEP_ALIVE_MESSAGE = "KeepAlive";
 	private static String READY_TO_STORE_MESSAGE = "ReadyToStore";
+	private static String CONFIRM_TO_STORE_MESSAGE = "ConfirmToStore";
+	private static String BACKUP_MESSAGE = "BackUpMessage";
+	
+	private static String PATH_SQLITE_FILE = "src/info_master.db";
 
 	public RedundancyManager() {
-		System.out.println("Se genera una nueva instancia");
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
 		readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
@@ -78,37 +90,44 @@ public class RedundancyManager implements Runnable {
 		threadSendKeepAliveMessages.start();
 	}
 
-	private void sendKeepAliveMessage() {
-
-		String message = generateKeepAliveMessage();
-		byte[] messageBytes = message.getBytes();
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
-				messageBytes.length, inetAddress, globalManager.getTracker()
-						.getPort());
-		writeSocket(datagramPacket);
-	}
-	
-	private String generateKeepAliveMessage() {
-		return getTracker().getId() + ":" + getTracker().isMaster() + ":" + TYPE_KEEP_ALIVE_MESSAGE + ":";
-	}
-
 	private void socketListeningPackets() {
 		try {
 			DatagramPacket packet;
 			while (!stopListeningPackets) {
 				byte[] buf = new byte[256];
+				//byte[] buf = new byte[4352];
 				packet = new DatagramPacket(buf, buf.length);
 				socket.receive(packet);
-
 				if ( isKeepAliveMessage(packet) )
 				{
 					System.out.println("Me ha venido un keep alive message... " + " Soy tracker " + getTracker().getId());
 					saveActiveTracker ( packet );
-					
-				}else if(isReadyToStore(packet)){
+				}
+				else if(isReadyToStore(packet)){
 					if(globalManager.getTracker().isMaster())
 						checkIfAllAreReadyToStore(packet);
 				}
+				else
+				{
+					System.out.println("Me ha venido un mensaje de backup. ¿Es para mi? ");
+					String [] partsMessage = new String(packet.getData()).split("%:%");
+				String idMessage = partsMessage[0];
+					System.out.println("Id viene: " +  idMessage + " mi Id " + getTracker().getId() );
+					if ( idMessage.equals(getTracker().getId()))
+					{
+						String newFileName = "src/info_" + getTracker().getId() + ".db";
+						String fichero = partsMessage[2];
+						System.out.println("Escribimos el nuevo fichero 1..");
+						File fileDest = new File ( newFileName );
+						FileOutputStream file = new FileOutputStream(fileDest);
+						System.out.println("Escribimos el nuevo fichero..");
+						file.write(fichero.getBytes());
+						file.flush();
+						file.close();
+					}
+				}
+				
+
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received info..." + messageReceived);
 			}
@@ -126,16 +145,11 @@ public class RedundancyManager implements Runnable {
 			if(bool)
 				numReady++;
 		}
-		if(num == numReady){
-			readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
-			//TODO SEND the data to the rest of trackers
-			this.sendBackUp();
+		if(num-1 == numReady){
+			readyToStoreTrackers.clear();
+			sendConfirmToStoreMessage();
 		}
 		
-	}
-	private boolean isReadyToStore(DatagramPacket packet){
-		String [] message = new String(packet.getData()).split(":");
-		return message[1].equals(READY_TO_STORE_MESSAGE);
 	}
 	
 	private boolean getBoolean ( String condicion )
@@ -152,57 +166,148 @@ public class RedundancyManager implements Runnable {
 		String id = messageReceived[0];
 		String master = messageReceived[1];
 		System.out.println("Viene id: " + id + " se comprueba con " +  globalManager.getTracker().getId() );
-		if ( !id.equals(globalManager.getTracker().getId() ) )
+		
+		ConcurrentHashMap<String,ActiveTracker> activeTrackers = globalManager.getTracker().getTrackersActivos();
+		System.out.println("Active Trackers..." + getTracker().getTrackersActivos().values().toString() +  " para tracker " + getTracker().getId());
+		if ( activeTrackers.containsKey(id ) )
 		{
-			System.out.println("Id diferente a la del tracker..");
-			ConcurrentHashMap<String,ActiveTracker> activeTrackers = globalManager.getTracker().getTrackersActivos();
-			System.out.println("Active Trackers..." + getTracker().getTrackersActivos().values().toString() +  " para tracker " + getTracker().getId());
-			if ( activeTrackers.containsKey(id ) )
+			ActiveTracker activeTracker = activeTrackers.get(id);
+			activeTracker.setLastKeepAlive(new Date());
+			activeTracker.setMaster(getBoolean(master));
+			this.notifyObservers( new String("EditActiveTracker") );
+		}
+		else
+		{
+			boolean continuar = true;
+			if ( globalManager.getTracker().isMaster()) //If the tracker is master tracker
 			{
-				ActiveTracker activeTracker = activeTrackers.get(id);
-				activeTracker.setLastKeepAlive(new Date());
-				activeTracker.setMaster(getBoolean(master));
+				if ( id.compareTo(getTracker().getId()) == -1 || id.equals(getTracker().getId() ) )
+				{
+					continuar = false;
+				}
+				//Soy master, y viene bien el id
+				else 
+				{
+					sendBackUpMessage( id );
+				}
+			}
+			
+			if ( continuar ) {
+				
+				ActiveTracker activeTracker = new ActiveTracker();
+				activeTracker.setActive(true);
+				activeTracker.setId(id);
+				activeTracker.setLastKeepAlive(new Date() );
+				System.out.println("Me viene de master... " + master + Boolean.getBoolean(master) + " para tracker " + id);
+				activeTracker.setMaster(Boolean.getBoolean(master));
+				//Add the new active tracker to the list
+				globalManager.getTracker().addActiveTracker(activeTracker);
+				System.out.println("Anyadimos a la lisa un nuevo tracker activo");
+				//Notify to the observers to update the UI
 				this.notifyObservers( new String("NewActiveTracker") );
 			}
-			else
-			{
-				boolean continuar = true;
-				if ( globalManager.getTracker().isMaster()) //If the tracker is master tracker
-				{
-					List<String> idsActiveTrackers = getListActiveTrackers();
-					if ( id.compareTo(globalManager.getTracker().getId()) == -1 )
-					{
-						continuar = false;
-					}
-				}
-				if ( continuar ) {
-					ActiveTracker activeTracker = new ActiveTracker();
-					activeTracker.setActive(true);
-					activeTracker.setId(id);
-					activeTracker.setLastKeepAlive(new Date() );
-					System.out.println("Me viene de master... " + master + Boolean.getBoolean(master) + " para tracker " + id);
-					activeTracker.setMaster(Boolean.getBoolean(master));
-					//Add the new active tracker to the list
-					globalManager.getTracker().addActiveTracker(activeTracker);
-					System.out.println("Anyadimos a la lisa un nuevo tracker activo");
-					//Notify to the observers to update the UI
-					this.notifyObservers( new String("NewActiveTracker") );
-				}
+			
+			else {
+				//TODO-ABILBADO: Hacer envio de mensaje de error con sugerencia de numero
 			}
 		}
 		
 	}
 	
-	private List<String> getListActiveTrackers()
-	{
-		List<String> activeTrackers = new ArrayList<String>();
+	/*** SEND MESSAGES TO OTHER TRACKERS ***/
 	
-		for ( ActiveTracker activeTracker : globalManager.getTracker().getTrackersActivos().values() )
-		{
-			activeTrackers.add(activeTracker.getId());
-		}
-		return activeTrackers;
-		
+	private void sendConfirmToStoreMessage() {
+		String confirmToStoreMessage = generateConfirmToStoreMessage();
+		byte[] messageBytes = confirmToStoreMessage.getBytes();
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+				messageBytes.length, inetAddress, globalManager.getTracker()
+						.getPort());
+		writeSocket(datagramPacket);
+	}
+	
+	private void sendKeepAliveMessage() {
+
+		String message = generateKeepAliveMessage();
+		byte[] messageBytes = message.getBytes();
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+				messageBytes.length, inetAddress, globalManager.getTracker()
+						.getPort());
+		writeSocket(datagramPacket);
+	}
+	
+	private String generateKeepAliveMessage() {
+		return getTracker().getId() + ":" + getTracker().isMaster() + ":" + TYPE_KEEP_ALIVE_MESSAGE + ":";
+	}
+	
+	private String generateConfirmToStoreMessage() {
+		return getTracker().getId() + ":" + CONFIRM_TO_STORE_MESSAGE + ":";
+	}
+	
+	private void sendReadyToStoreMessage() {
+
+		String message = generateReadyToStoreMessage();
+		byte[] messageBytes = message.getBytes();
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+				messageBytes.length, inetAddress, globalManager.getTracker()
+						.getPort());
+		writeSocket(datagramPacket);
+	}
+	
+	private String generateReadyToStoreMessage() {
+		return globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE + ":";
+	}
+	
+	private void sendBackUpMessage( String idTracker ){
+		String message = generateBackUpMessage( idTracker );
+		byte[] messageBytes = message.getBytes();
+		System.out.println("Size of message " + messageBytes.length );
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+				messageBytes.length, inetAddress, globalManager.getTracker()
+						.getPort());
+		writeSocket(datagramPacket);
+	}
+
+	private String generateBackUpMessage( String idTracker ) {
+		File file = new File (PATH_SQLITE_FILE);
+		 byte[] bytes = null;
+	        FileInputStream fis = null;
+			try {
+				fis = new FileInputStream(file);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+	        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	        byte[] buf = new byte[1024];
+	        try {
+	            for (int readNum; (readNum = fis.read(buf)) != -1;) {
+	                bos.write(buf, 0, readNum); //no doubt here is 0
+	                //Writes len bytes from the specified byte array starting at offset off to this byte array output stream.
+	                System.out.println("read " + readNum + " bytes,");
+	            }
+	        
+	        bytes = bos.toByteArray();
+	        String mensaje = new String ( bytes );
+	        
+	        File filePrueba = new File("src/test.db");
+	        
+	        FileOutputStream fileOutputStream = new FileOutputStream(filePrueba);
+	        fileOutputStream.write(mensaje.getBytes());
+	        fileOutputStream.flush();
+	        fileOutputStream.close();
+	        } catch (IOException ex) {
+	            System.err.println("Error writing the sqlite file...");
+	            ex.printStackTrace();
+	        }
+		return idTracker + "%:%" + BACKUP_MESSAGE + "%:%" + new String ( bytes ) + "%:%";
+	}
+	
+	/*** [END] SEND MESSAGES TO OTHER TRACKERS ***/
+	
+	/*** CHECK THE TYPES OF THE RECEIVED MESSAGES **/
+	
+	private boolean isReadyToStore(DatagramPacket packet){
+		String [] message = new String(packet.getData()).split(":");
+		return message[1].equals(READY_TO_STORE_MESSAGE);
 	}
 	
 	private boolean isKeepAliveMessage ( DatagramPacket packet )
@@ -210,6 +315,16 @@ public class RedundancyManager implements Runnable {
 		String [] message = new String(packet.getData()).split(":");
 		return message[2].equals(TYPE_KEEP_ALIVE_MESSAGE);
 	}
+	
+	
+	private boolean isBackUpMessage ( DatagramPacket packet ) {
+		String [] message = new String(packet.getData()).split("%:%:");
+		return message[1].equals(BACKUP_MESSAGE);
+	}
+	
+	
+	/*** [END] CHECK THE TYPES OF THE RECEIVED MESSAGES **/
+	
 	private void generateThreadToCheckActiveTrackers ( )
 	{
 		Thread threadCheckKeepAliveMessages = new Thread() {
@@ -245,9 +360,9 @@ public class RedundancyManager implements Runnable {
 		System.out.println("Entro en la eleccion del master");
 		ConcurrentHashMap<String, ActiveTracker> mapActiveTrackers = globalManager.getTracker().getTrackersActivos();
 		System.out.println("Miramos el map de Trackers Activos..." + mapActiveTrackers.toString() );
-		if ( mapActiveTrackers.size() == 0 )
+		if ( mapActiveTrackers.size() == 1 && mapActiveTrackers.containsKey(getTracker().getId()) )
 		{
-			System.out.println("Al no existir más trackers, el tracker" + getTracker().getId() + "es el MASTER");
+			System.out.println("Al solo existir un activo y ser yo, el tracker" + getTracker().getId() + "es el MASTER");
 			getTracker().setMaster(true);
 		}
 		else
@@ -284,30 +399,15 @@ public class RedundancyManager implements Runnable {
 				
 				System.out.println("Borrando tracker " + activeTracker.getId() + " ...");
 				if(activeTracker.isMaster()){
-					System.out.println("The Master is going to be removedS");
-					//TODO Token ring process
+					System.out.println("The Master is going to be removed");
+					electMasterInitiating();
 				}
 				globalManager.getTracker().getTrackersActivos().remove(activeTracker.getId());
 				this.notifyObservers(new String ("DeleteActiveTracker"));
 			}
 		}
 	}
-	private void sendReadyToStoreMessage() {
 
-		String message = generateReadyToStoreMessage();
-		byte[] messageBytes = message.getBytes();
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
-				messageBytes.length, inetAddress, globalManager.getTracker()
-						.getPort());
-		writeSocket(datagramPacket);
-	}
-	
-	private String generateReadyToStoreMessage() {
-		return globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE + ":";
-	}
-	private void sendBackUp(){
-		
-	}
 	/**
 	 * Method used to write over the socket
 	 * 

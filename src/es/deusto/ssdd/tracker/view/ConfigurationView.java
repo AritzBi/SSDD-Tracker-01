@@ -72,6 +72,7 @@ public class ConfigurationView extends JPanel implements Observer,
 		txtIpAddress.setColumns(20);
 		txtIpAddress.setMaximumSize(new Dimension(Integer.MAX_VALUE,
 				txtIpAddress.getPreferredSize().height));
+		txtIpAddress.setText("224.0.0.4");
 		boxForIpAddress.add(txtIpAddress);
 		boxForIpAddress.add(Box.createVerticalGlue());
 
@@ -82,6 +83,7 @@ public class ConfigurationView extends JPanel implements Observer,
 		txtPort.setColumns(20);
 		txtPort.setMaximumSize(new Dimension(Integer.MAX_VALUE, txtPort
 				.getPreferredSize().height));
+		txtPort.setText("40");
 		boxForPort.add(txtPort);
 		boxForPort.add(Box.createVerticalGlue());
 
@@ -92,6 +94,7 @@ public class ConfigurationView extends JPanel implements Observer,
 		txtPortForPeers.setColumns(20);
 		txtPortForPeers.setMaximumSize(new Dimension(Integer.MAX_VALUE,
 				txtPortForPeers.getPreferredSize().height));
+		txtPortForPeers.setText("50");
 		boxForPortForPeers.add(txtPortForPeers);
 		boxForPortForPeers.add(Box.createVerticalGlue());
 

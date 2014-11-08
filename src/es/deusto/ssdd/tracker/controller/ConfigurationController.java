@@ -20,9 +20,9 @@ public class ConfigurationController {
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 	
-	public ConfigurationController ( UDPManager udpManager , GlobalManager globalManager ) {
+	public ConfigurationController ( UDPManager udpManager ) {
 		this.udpManager = udpManager;
-		this.globalManager = globalManager;
+		globalManager = GlobalManager.getInstance();
 		pattern = Pattern.compile(IPADDRESS_PATTERN);
 	}
 	

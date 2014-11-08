@@ -24,7 +24,7 @@ public class MainProgram {
 		GlobalManager globalManager = GlobalManager.getInstance();
 		
 		UDPManager udpManager = new UDPManager();
-		ConfigurationController configurationController = new ConfigurationController(udpManager, globalManager);
+		ConfigurationController configurationController = new ConfigurationController(udpManager );
 		ConfigurationView configurationView = new ConfigurationView(configurationController);
 		
 		DataManager dataManager = new DataManager();

@@ -1,8 +1,9 @@
 package es.deusto.ssdd.tracker.vo;
 
+import java.util.Comparator;
 import java.util.Date;
 
-public class ActiveTracker {
+public class ActiveTracker implements Comparator {
 
 	private String id;
 	private boolean active;
@@ -37,4 +38,20 @@ public class ActiveTracker {
 	public String toString() {
 		return "Id: " + id + "master: " + master;
 	}
+
+	@Override
+	public int compare(Object o1, Object o2) {
+		ActiveTracker a=(ActiveTracker)o1;
+		ActiveTracker b=(ActiveTracker)o2;
+		if(Integer.parseInt(a.getId())>Integer.parseInt(b.getId())){
+			return 1;
+		}
+		else{
+			if(Integer.parseInt(a.getId())<Integer.parseInt(b.getId())){
+				return -1;
+			}else
+				return 0;
+		}
+	}
+
 }

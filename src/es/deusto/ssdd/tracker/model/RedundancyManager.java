@@ -10,6 +10,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Observer;
@@ -40,12 +41,16 @@ public class RedundancyManager implements Runnable {
 	private static String READY_TO_STORE_MESSAGE = "ReadyToStore";
 	private static String CONFIRM_TO_STORE_MESSAGE = "ConfirmToStore";
 	private static String BACKUP_MESSAGE = "BackUpMessage";
+	private static String ERROR_ID_MESSAGE="IncorrectId";
+	private static String CORRECT_ID_MESSAGE="CorrectId";
 	
 	private static String PATH_SQLITE_FILE = "src/info_master.db";
 	private static String INICIO = "I";
 	private static String FIN = "F";
 	private byte[] ficheroDB = null;
 	private int sizeActual = 0;
+	private boolean sentKeepAlive;
+	private boolean waitingToHaveID=true;
 	
 	public RedundancyManager() {
 		observers = new ArrayList<Observer>();
@@ -113,9 +118,15 @@ public class RedundancyManager implements Runnable {
 					}
 						
 				}
+				else if(isCorrectIDMessage(packet)){
+					checkIfCorrectBelongsToTracker(packet);
+				}
+				else if(isErrorIDMessage(packet)){
+					checkErrorIDMessage(packet);
+				}
 				else if (isBackUpMessage(packet))
 				{
-					System.out.println("Me ha venido un mensaje de backup. ¿Es para mi? ");
+					System.out.println("Me ha venido un mensaje de backup. ï¿½Es para mi? ");
 					String [] partsMessage = new String(packet.getData()).split("%:%");
 					String idMessage = partsMessage[0];
 					String inicioOFin = partsMessage[1];
@@ -191,6 +202,16 @@ public class RedundancyManager implements Runnable {
 		
 	}
 	
+	private void checkIfCorrectBelongsToTracker(DatagramPacket packet){
+		String[] messageReceived = new String ( packet.getData() ).split(":");
+		String originId = messageReceived[0];
+		String candidateId = messageReceived[2];
+		if(originId.equals(getTracker().getId())&&waitingToHaveID)
+			this.getTracker().setId(candidateId);
+	}
+	private void checkErrorIDMessage(DatagramPacket packet){
+		
+	}
 	private boolean getBoolean ( String condicion )
 	{
 		if ( condicion.equals("true") )
@@ -211,6 +232,11 @@ public class RedundancyManager implements Runnable {
 		System.out.println("Active Trackers..." + getTracker().getTrackersActivos().values().toString() +  " para tracker " + getTracker().getId());
 		if ( activeTrackers.containsKey(id ) )
 		{
+			if(id.equals( this.getTracker().getId())  && sentKeepAlive){
+				this.sentKeepAlive=false;
+			}else if(id.equals( this.getTracker().getId())  && !sentKeepAlive){
+				calculatePossibleId(id);
+			}
 			ActiveTracker activeTracker = activeTrackers.get(id);
 			activeTracker.setLastKeepAlive(new Date());
 			activeTracker.setMaster(getBoolean(master));
@@ -229,6 +255,7 @@ public class RedundancyManager implements Runnable {
 				else 
 				{
 					sendBackUpMessage( id );
+					this.sendCorrectIDMessage(id);
 				}
 			}
 			
@@ -248,9 +275,27 @@ public class RedundancyManager implements Runnable {
 			}
 			
 			else {
-				//TODO-ABILBADO: Hacer envio de mensaje de error con sugerencia de numero
+				calculatePossibleId(id);
 			}
 		}
+		
+	}
+	
+	private void calculatePossibleId(String originId){
+		int candidateID=Integer.parseInt(getTracker().getId())+1;
+		int tempID;
+		List<ActiveTracker>orderedList=GlobalManager.getInstance().getActiveTrackers();
+		Collections.sort(orderedList, new ActiveTracker());
+		for ( ActiveTracker activeTracker :orderedList ){
+			tempID=Integer.parseInt(activeTracker.getId());
+			if(tempID==candidateID){
+				candidateID++;
+			}else if(candidateID<tempID){
+				break;
+			}
+		}
+		sendErrorIDMessage(Integer.parseInt(originId),candidateID);
+		
 		
 	}
 	
@@ -272,6 +317,25 @@ public class RedundancyManager implements Runnable {
 		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
 				messageBytes.length, inetAddress, globalManager.getTracker()
 						.getPort());
+		this.sentKeepAlive=true;
+		writeSocket(datagramPacket);
+	}
+	
+	private void sendErrorIDMessage(int originID,int candidateID){
+		String message = generateIDErrorMessage(originID,candidateID);
+		byte[] messageBytes = message.getBytes();
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+				messageBytes.length, inetAddress, globalManager.getTracker()
+						.getPort());
+		writeSocket(datagramPacket);
+	}
+	
+	private void sendCorrectIDMessage(String originID){
+		String message = generateCorrectIDMessage(originID);
+		byte[] messageBytes = message.getBytes();
+		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+				messageBytes.length, inetAddress, globalManager.getTracker()
+						.getPort());
 		writeSocket(datagramPacket);
 	}
 	
@@ -282,7 +346,12 @@ public class RedundancyManager implements Runnable {
 	private String generateConfirmToStoreMessage() {
 		return getTracker().getId() + ":" + CONFIRM_TO_STORE_MESSAGE + ":";
 	}
-	
+	private String generateIDErrorMessage(int originID,int candidateID) {
+		return originID+ ":" + ERROR_ID_MESSAGE+ ":"+candidateID+":";
+	}
+	private String generateCorrectIDMessage(String originID) {
+		return originID+ ":" + CORRECT_ID_MESSAGE+ ":";
+	}
 	private void sendReadyToStoreMessage() {
 
 		String message = generateReadyToStoreMessage();
@@ -401,6 +470,14 @@ public class RedundancyManager implements Runnable {
 		String [] message = new String(packet.getData()).split("%:%");
 		return message[3].equals(BACKUP_MESSAGE);
 	}
+	private boolean isCorrectIDMessage(DatagramPacket packet){
+		String [] message = new String(packet.getData()).split(":");
+		return message[1].equals(CORRECT_ID_MESSAGE);
+	}
+	private boolean isErrorIDMessage(DatagramPacket packet){
+		String [] message = new String(packet.getData()).split(":");
+		return message[1].equals(ERROR_ID_MESSAGE);
+	}
 	
 	
 	/*** [END] CHECK THE TYPES OF THE RECEIVED MESSAGES **/
@@ -504,7 +581,7 @@ public class RedundancyManager implements Runnable {
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
 	public void addObserver(Observer o) {
 		if (o != null && !this.observers.contains(o)) {
-			System.out.println("Se añade un nuevo observador");
+			System.out.println("Se aï¿½ade un nuevo observador");
 			this.observers.add(o);
 		}
 	}

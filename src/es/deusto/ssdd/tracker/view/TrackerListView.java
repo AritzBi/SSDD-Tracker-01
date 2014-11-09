@@ -24,7 +24,6 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	private JTable table;
 	private MyBooleanModel model;
 	private Object [][] rows;
-	public static final int numberRowsExample=20;
 	private String[] columnNames = {"Tracker ID", "Active", "Last Keep Alive","Master"};
 
 	public TrackerListView ( TrackerListController trackerListController )
@@ -36,14 +35,20 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	
 	@Override
 	public void update(Observable o, Object arg) {
-		if ( arg.equals("NewActiveTracker") || arg.equals("DeleteActiveTracker") || arg.equals("EditActiveTracker"))
+		if ( arg.equals("NewActiveTracker") || arg.equals("DeleteActiveTracker") || arg.equals("EditActiveTracker") )
 		{
+			updateTable();
+		}
+	}
+	
+	private synchronized void updateTable() {
+		
 			generateTrackersData();
 			model.setDataVector(rows, columnNames);
 			model.fireTableDataChanged();
 			configureSizesOfTable(table);
 			table.repaint();
-		}
+	
 	}
 
 	@Override

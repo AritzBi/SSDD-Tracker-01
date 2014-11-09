@@ -23,17 +23,17 @@ public class MainProgram {
 		
 		GlobalManager globalManager = GlobalManager.getInstance();
 		
+		RedundancyManager redundancyManager = new RedundancyManager();
+		TrackerListController trackerListController = new TrackerListController( redundancyManager );
+		TrackerListView trackerListView = new TrackerListView(trackerListController);
+		
 		UDPManager udpManager = new UDPManager();
-		ConfigurationController configurationController = new ConfigurationController(udpManager );
+		ConfigurationController configurationController = new ConfigurationController(udpManager, redundancyManager );
 		ConfigurationView configurationView = new ConfigurationView(configurationController);
 		
 		DataManager dataManager = new DataManager();
 		PeerListController peerListController = new PeerListController( dataManager );
 		PeerListView peerListView = new PeerListView(peerListController);
-		
-		RedundancyManager redundancyManager = new RedundancyManager();
-		TrackerListController trackerListController = new TrackerListController( redundancyManager );
-		TrackerListView trackerListView = new TrackerListView(trackerListController);
 	
 		globalManager.setRedundancyManager(redundancyManager);
 		globalManager.setUdpManager(udpManager);

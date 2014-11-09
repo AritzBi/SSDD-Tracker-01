@@ -5,11 +5,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import es.deusto.ssdd.tracker.model.GlobalManager;
+import es.deusto.ssdd.tracker.model.RedundancyManager;
 import es.deusto.ssdd.tracker.model.UDPManager;
+import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class ConfigurationController {
 	private UDPManager udpManager;
 	private GlobalManager globalManager;
+	private RedundancyManager redundancyManager;
 
 	private Pattern pattern;
 	private Matcher matcher;
@@ -20,8 +23,9 @@ public class ConfigurationController {
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
 			"([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 	
-	public ConfigurationController ( UDPManager udpManager ) {
+	public ConfigurationController ( UDPManager udpManager, RedundancyManager redundancyManager ) {
 		this.udpManager = udpManager;
+		this.redundancyManager = redundancyManager;
 		globalManager = GlobalManager.getInstance();
 		pattern = Pattern.compile(IPADDRESS_PATTERN);
 	}
@@ -31,11 +35,20 @@ public class ConfigurationController {
 		udpManager.addObserver(o);
 	}
 	
+	public void addObserverRedundandcy ( Observer o )
+	{
+		redundancyManager.addObserver(o);
+	}
+	
 	public void deleteObserver ( Observer o )
 	{
 		udpManager.deleteObserver(o);
 	}
 	
+	public void deleteObserverRedundancy ( Observer o )
+	{
+		redundancyManager.deleteObserver(o);
+	}
 	/**
 	 * Method used to connect the tracker with a specified IP, port and id
 	 * @param ipAddress
@@ -63,5 +76,9 @@ public class ConfigurationController {
 	public void disconnect() {
 		//We need to stop all the running threads on the tracker
 		globalManager.disconnect();
+	}
+	
+	public Tracker getTracker() {
+		return globalManager.getTracker();
 	}
 }

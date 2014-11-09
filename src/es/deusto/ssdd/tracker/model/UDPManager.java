@@ -93,6 +93,7 @@ public class UDPManager implements Runnable {
 	 * 
 	 * @param datagramPacket
 	 */
+	@SuppressWarnings("unused")
 	private synchronized void writeSocket(DatagramPacket datagramPacket) {
 		try {
 			socket.send(datagramPacket);

@@ -34,6 +34,7 @@ public class ConfigurationView extends JPanel implements Observer,
 		super(new BorderLayout());
 		controller = configurationController;
 		controller.addObserver(this);
+		controller.addObserverRedundandcy(this);
 		setUpPanel();
 	}
 
@@ -204,7 +205,11 @@ public class ConfigurationView extends JPanel implements Observer,
 
 	@Override
 	public void update(Observable o, Object arg) {
-
+		if ( arg.equals("NewIdTracker") )
+		{
+			//Update the value of the id of the tracker
+			spinnerId.setValue(controller.getTracker().getId());
+		}
 	}
 
 }

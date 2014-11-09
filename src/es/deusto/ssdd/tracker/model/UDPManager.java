@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Observer;
 
+import es.deusto.ssdd.tracker.vo.Tracker;
+
 public class UDPManager implements Runnable {
 
 	private List<Observer> observers;
@@ -16,9 +18,8 @@ public class UDPManager implements Runnable {
 	private MulticastSocket socket;
 	private InetAddress inetAddress;
 	private boolean stopListeningPackets = false;
-	private boolean stopThreadAnnounceTests=false;
+	private boolean stopThreadAnnounceTests = false;
 	private static String READY_TO_STORE_MESSAGE = "ReadyToStore";
-
 
 	public UDPManager() {
 		observers = new ArrayList<Observer>();
@@ -30,7 +31,7 @@ public class UDPManager implements Runnable {
 		createSocket();
 		generateAnnounceTests();
 		socketListeningPackets();
-		
+
 	}
 
 	private void createSocket() {
@@ -54,12 +55,9 @@ public class UDPManager implements Runnable {
 				System.out.println("Before socket");
 				socket.receive(packet);
 				System.out.println("Post socket");
-				if (isConnectRequestMessage(packet))
-				{
-					//New thread to send a response
-				}
-				else if (isAnnounceRequestMessage (packet ))
-				{
+				if (isConnectRequestMessage(packet)) {
+					// New thread to send a response
+				} else if (isAnnounceRequestMessage(packet)) {
 					this.sendReadyToStoreMessage();
 				}
 				String messageReceived = new String(packet.getData());
@@ -69,21 +67,25 @@ public class UDPManager implements Runnable {
 			e.printStackTrace();
 		}
 	}
+
 	private void generateAnnounceTests() {
 		try {
-			
-			final MulticastSocket testSocket = new MulticastSocket(globalManager.getTracker().getPort());
+
+			final MulticastSocket testSocket = new MulticastSocket(
+					globalManager.getTracker().getPort());
 			inetAddress = InetAddress.getByName(globalManager.getTracker()
 					.getIpAddress());
 			testSocket.joinGroup(inetAddress);
 			Thread threadSendAnnounceTests = new Thread() {
 				public void run() {
 					while (!stopThreadAnnounceTests) {
-						try {
-							Thread.sleep(5000);
-							sendTestAnnouceRequest(testSocket);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
+						if (getTracker().isMaster()) {
+							try {
+								Thread.sleep(5000);
+								sendTestAnnouceRequest(testSocket);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
 						}
 					}
 				}
@@ -93,8 +95,8 @@ public class UDPManager implements Runnable {
 			e1.printStackTrace();
 		}
 	}
-	
-	private void sendTestAnnouceRequest(MulticastSocket testSocket){
+
+	private void sendTestAnnouceRequest(MulticastSocket testSocket) {
 		String message = "ANNOUNCE:";
 		byte[] messageBytes = message.getBytes();
 		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
@@ -106,6 +108,7 @@ public class UDPManager implements Runnable {
 			e.printStackTrace();
 		}
 	}
+
 	private void sendReadyToStoreMessage() {
 		String message = generateReadyToStoreMessage();
 		byte[] messageBytes = message.getBytes();
@@ -114,10 +117,12 @@ public class UDPManager implements Runnable {
 						.getPort());
 		writeSocket(datagramPacket);
 	}
-	
+
 	private String generateReadyToStoreMessage() {
-		return globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE + ":";
+		return globalManager.getTracker().getId() + ":"
+				+ READY_TO_STORE_MESSAGE + ":";
 	}
+
 	/**
 	 * Method used to know if the received UDP packet is a connect request
 	 * message
@@ -137,7 +142,7 @@ public class UDPManager implements Runnable {
 	 * @return
 	 */
 	private boolean isAnnounceRequestMessage(DatagramPacket packet) {
-		String [] message = new String(packet.getData()).split(":");
+		String[] message = new String(packet.getData()).split(":");
 		return message[0].equals("ANNOUNCE");
 	}
 
@@ -201,12 +206,16 @@ public class UDPManager implements Runnable {
 	public void setStopListeningPackets(boolean stopListeningPackets) {
 		this.stopListeningPackets = stopListeningPackets;
 	}
-	
+
 	public boolean isStopThreadAnnounceTests() {
 		return stopThreadAnnounceTests;
 	}
 
 	public void setStopThreadAnnounceTests(boolean stopThreadAnnounceTests) {
 		this.stopThreadAnnounceTests = stopThreadAnnounceTests;
+	}
+
+	private Tracker getTracker() {
+		return globalManager.getTracker();
 	}
 }

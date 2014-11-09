@@ -37,13 +37,14 @@ public class RedundancyManager implements Runnable {
 	private static String ERROR_ID_MESSAGE="IncorrectId";
 	private static String CORRECT_ID_MESSAGE="CorrectId";
 	
-	private static String PATH_SQLITE_FILE = "src/info_master.db";
+	private static String PATH_BASE_SQLITE_FILE = "src/base_database.db";
 	private static String INICIO = "I";
 	private static String FIN = "F";
 	private byte[] ficheroDB = null;
 	private int sizeActual = 0;
 	private boolean sentKeepAlive;
 	private boolean waitingToHaveID=true;
+	private boolean choosingMaster=false;
 	
 	public RedundancyManager() {
 		observers = new ArrayList<Observer>();
@@ -94,34 +95,37 @@ public class RedundancyManager implements Runnable {
 			DatagramPacket packet;
 			while (!stopListeningPackets) {
 				//byte[] buf = new byte[256];
-				byte[] buf = new byte[2048];
-				packet = new DatagramPacket(buf, buf.length);
-				socket.receive(packet);
-				if ( isKeepAliveMessage(packet) )
-				{
-					saveActiveTracker ( packet );
-				}
-				else if(isReadyToStore(packet)){
-					if(getTracker().isMaster())
+				//byte[] buf = new byte[2048];
+				if ( !choosingMaster ) {
+					byte[] buf = new byte[1024];
+					packet = new DatagramPacket(buf, buf.length);
+					socket.receive(packet);
+					if ( isKeepAliveMessage(packet) )
 					{
-						checkIfAllAreReadyToStore(packet);
+						saveActiveTracker ( packet );
 					}
+					else if(isReadyToStore(packet)){
+						if(getTracker().isMaster())
+						{
+							checkIfAllAreReadyToStore(packet);
+						}
+					}
+					else if(isCorrectIDMessage(packet)){
+						checkIfCorrectBelongsToTracker(packet);
+					}
+					else if(isErrorIDMessage(packet)){
+						checkErrorIDMessage(packet);
+					}
+					else if (isBackUpMessage(packet))
+					{
+						generateDatabaseForPeersAndTorrents ( packet );
+					}
+					else if(isConfirmToStore(packet)){
+						storeTemporalData();
+					}
+					String messageReceived = new String(packet.getData());
+					System.out.println("Received info..." + messageReceived);
 				}
-				else if(isCorrectIDMessage(packet)){
-					checkIfCorrectBelongsToTracker(packet);
-				}
-				else if(isErrorIDMessage(packet)){
-					checkErrorIDMessage(packet);
-				}
-				else if (isBackUpMessage(packet))
-				{
-					generateDatabaseForPeersAndTorrents ( packet );
-				}
-				else if(isConfirmToStore(packet)){
-					storeTemporalData();
-				}
-				String messageReceived = new String(packet.getData());
-				System.out.println("Received info..." + messageReceived);
 			}
 		} catch (IOException e) {
 			System.err.println("** IO EXCEPTION: Error while listening packets from the socket... " + e.getMessage() );
@@ -155,6 +159,7 @@ public class RedundancyManager implements Runnable {
 				try {
 					file = new FileOutputStream(fileDest);
 					System.out.println("Writing the file...");
+					System.err.println("Total size dest: " + new String ( ficheroDB ) );
 					file.write(ficheroDB);
 					file.flush();
 					file.close();
@@ -206,7 +211,11 @@ public class RedundancyManager implements Runnable {
 		String[] messageReceived = new String ( packet.getData() ).split(":");
 		String originId = messageReceived[0];
 		if(originId.equals(getTracker().getId())&&waitingToHaveID)
+		{
 			waitingToHaveID = false;
+			generateNewDatabaseForTracker();
+		}
+			
 		
 	}
 	private void checkErrorIDMessage(DatagramPacket packet){
@@ -262,7 +271,7 @@ public class RedundancyManager implements Runnable {
 			//Process necessary when coming a new id and the tracker is the master tracker
 			if ( globalManager.getTracker().isMaster())
 			{
-				if ( id.compareTo(getTracker().getId()) == -1 || ( id.equals(getTracker().getId()) ) )
+				if ( id.compareTo(getTracker().getId()) <= -1 || ( id.equals(getTracker().getId()) ) )
 				{
 					//not save the new active tracker
 					continuar = false;
@@ -385,16 +394,52 @@ public class RedundancyManager implements Runnable {
 			writeSocket(datagramPacket);
 		}
 	}
+	
+	private void generateNewDatabaseForTracker () {
+		File file = new File (PATH_BASE_SQLITE_FILE);
+		byte[] bytes = null;
+	    FileInputStream fis = null;
+		try {
+			fis = new FileInputStream(file);
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		    byte[] buf = new byte[1024];
+		    
+            for (int readNum; (readNum = fis.read(buf)) != -1;) {
+                bos.write(buf, 0, readNum);
+            }
+            bytes = bos.toByteArray();
+            fis.close();
+			
+		} catch (FileNotFoundException e) {
+			System.err.println("** FILE " + PATH_BASE_SQLITE_FILE + " NOT FOUND ** " + e.getMessage() );
+		}
+        catch (IOException e) {
+        	System.err.println("** IO EX: Error reading the file " + e.getMessage() );
+        }
+        File newFile = new File ( "src/info_" + getTracker().getId() + ".db" );
+        FileOutputStream fileOutputStream = null;
+        try {
+        	fileOutputStream = new FileOutputStream(newFile);
+        	  fileOutputStream.write(bytes);
+              fileOutputStream.close();
+		} catch (FileNotFoundException e) {
+			System.err.println("** FILE " + newFile.getPath() + " NOT FOUND ** " + e.getMessage() );
+		} catch (IOException e) {
+			System.err.println("** IO EX: Error writing new file " + e.getMessage() );
+		}
+      
+        
+	}
 
 	private String[] generateBackUpMessage( String idTracker ) {
 		//Take the .db file of the master
-		File file = new File (PATH_SQLITE_FILE);
+		File file = new File ("src/info_" + getTracker().getId() + ".db");
 		byte[] bytes = null;
 	    FileInputStream fis = null;
 		try {
 			fis = new FileInputStream(file);
 		} catch (FileNotFoundException e) {
-			System.err.println("** FILE " + PATH_SQLITE_FILE + " NOT FOUND ** " + e.getMessage() );
+			System.err.println("** FILE " + PATH_BASE_SQLITE_FILE + " NOT FOUND ** " + e.getMessage() );
 		}
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buf = new byte[1024];
@@ -408,6 +453,7 @@ public class RedundancyManager implements Runnable {
         catch (IOException e) {
         	System.err.println("** IO EX: Error reading the file " + e.getMessage() );
         }
+        System.err.println("Total bytes origin: " + bytes );
         //Calculate the length of the message
         int messageLength = 0;
         if ( bytes.length % 1024 ==0 )
@@ -424,17 +470,15 @@ public class RedundancyManager implements Runnable {
         {
         	byte [] partMessage = new byte[1024];
         	partMessage = fillArrayBytes(i, partMessage, bytes);
-        	System.out.println("SIZE: " + new String ( partMessage ) );
         	if ( i >= (bytes.length - 1024) )
         	{
-        		message[kMessage] = idTracker + "%:%" + FIN + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + new String ( partMessage ) + "%:%";
+        		message[kMessage] = idTracker + "%:%" + FIN + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + partMessage + "%:%";
         		kMessage++;
         	}
         	else
         	{
         		//INICIO on the fragment: a way to know that there are more incoming messages
-        		message[kMessage] = idTracker + "%:%" + INICIO + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + new String ( partMessage ) + "%:%";
-        		System.out.println("EMPEZAMOS POR AQUI");
+        		message[kMessage] = idTracker + "%:%" + INICIO + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + partMessage + "%:%";
         		kMessage++;
         	}
         	
@@ -535,25 +579,32 @@ public class RedundancyManager implements Runnable {
 	private void electMasterInitiating()
 	{
 		System.out.println("Start electing the new master");
-		ConcurrentHashMap<String, ActiveTracker> mapActiveTrackers = globalManager.getTracker().getTrackersActivos();
+		ConcurrentHashMap<String, ActiveTracker> mapActiveTrackers = getTracker().getTrackersActivos();
 		if ( mapActiveTrackers.size() == 1 && mapActiveTrackers.containsKey(getTracker().getId()) )
 		{
 			System.out.println("Only exists one active tracker and I am this one, so " + getTracker().getId() + "is the new master");
 			getTracker().setMaster(true);
 			if ( waitingToHaveID )
+			{
 				waitingToHaveID = false;
+				generateNewDatabaseForTracker();
+			}
+				
 		}
 		else
 		{
 			boolean enc = false;
 			Integer i = 0;
 			List<String> keysMapActiveTrackers = new ArrayList<String>(mapActiveTrackers.keySet());
+			System.out.println("Active Trackers to compare with " + keysMapActiveTrackers );
 			while ( !enc && i < mapActiveTrackers.values().size() )
 			{
 				ActiveTracker activeTracker = (ActiveTracker) mapActiveTrackers.get(keysMapActiveTrackers.get(i));
+				System.out.println("Active tracker >> " + activeTracker );
 				if ( activeTracker != null )
 				{
-					if ( activeTracker.getId().compareTo( getTracker().getId()) == -1 )
+					System.out.println("Para caso tracker " + activeTracker.getId() + " comparamos " + activeTracker.getId().compareTo( getTracker().getId()));
+					if ( activeTracker.getId().compareTo( getTracker().getId()) <= -1 )
 					{
 						System.out.println("Found an active tracker with a id less than mine (" + getTracker().getId() + ") that is " +  activeTracker.getId() );
 						//Actual one is no the master tracker

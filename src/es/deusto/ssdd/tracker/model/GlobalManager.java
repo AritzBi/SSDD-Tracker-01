@@ -83,6 +83,7 @@ public class GlobalManager {
 		redundancyManager.setStopThreadCheckerKeepAlive(true);
 		
 		udpManager.setStopListeningPackets(true);
+		udpManager.setStopThreadAnnounceTests(true);
 		getTracker().getTrackersActivos().clear();
 	}
 	

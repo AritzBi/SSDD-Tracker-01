@@ -201,6 +201,13 @@ public class ConfigurationView extends JPanel implements Observer,
 			btnStart.setVisible(true);
 			btnStop.setVisible(false);
 		}
+		
+		else if ( e.getSource().equals(btnForceError)) {
+			controller.disconnect();
+			btnForceError.setEnabled(false);
+			btnStart.setVisible(true);
+			btnStop.setVisible(false);
+		}
 	}
 
 	@Override

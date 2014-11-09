@@ -62,7 +62,6 @@ public class UDPManager implements Runnable {
 				{
 					this.sendReadyToStoreMessage();
 				}
-				
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received message: " + messageReceived);
 			}
@@ -100,7 +99,7 @@ public class UDPManager implements Runnable {
 		byte[] messageBytes = message.getBytes();
 		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
 				messageBytes.length, inetAddress, globalManager.getTracker()
-						.getPort());
+						.getPortForPeers());
 		try {
 			socket.send(datagramPacket);
 		} catch (IOException e) {
@@ -108,7 +107,6 @@ public class UDPManager implements Runnable {
 		}
 	}
 	private void sendReadyToStoreMessage() {
-
 		String message = generateReadyToStoreMessage();
 		byte[] messageBytes = message.getBytes();
 		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
@@ -128,8 +126,7 @@ public class UDPManager implements Runnable {
 	 * @return
 	 */
 	private boolean isConnectRequestMessage(DatagramPacket packet) {
-		String [] message = new String(packet.getData()).split(":");
-		return message[1].equals("ANNOUNCE");
+		return false;
 	}
 
 	/**
@@ -140,7 +137,8 @@ public class UDPManager implements Runnable {
 	 * @return
 	 */
 	private boolean isAnnounceRequestMessage(DatagramPacket packet) {
-		return true;
+		String [] message = new String(packet.getData()).split(":");
+		return message[0].equals("ANNOUNCE");
 	}
 
 	/**

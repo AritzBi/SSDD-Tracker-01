@@ -28,8 +28,9 @@ public class UDPManager implements Runnable {
 	@Override
 	public void run() {
 		createSocket();
+		generateAnnounceTests();
 		socketListeningPackets();
-		//generateAnnounceTests();
+		
 	}
 
 	private void createSocket() {

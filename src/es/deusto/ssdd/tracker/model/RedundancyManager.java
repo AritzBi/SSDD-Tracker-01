@@ -474,7 +474,14 @@ public class RedundancyManager implements Runnable {
 	private boolean isKeepAliveMessage ( DatagramPacket packet )
 	{
 		String [] message = new String(packet.getData()).split(":");
-		return message[2].equals(TYPE_KEEP_ALIVE_MESSAGE);
+		if ( message.length > 2 )
+		{
+			return message[2].equals(TYPE_KEEP_ALIVE_MESSAGE);
+		}
+		else
+		{
+			return false;
+		}
 	}
 	
 	private boolean isBackUpMessage ( DatagramPacket packet ) {

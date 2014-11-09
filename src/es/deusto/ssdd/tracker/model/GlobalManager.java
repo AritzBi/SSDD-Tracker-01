@@ -63,6 +63,7 @@ public class GlobalManager {
 			redundancyManager.setStopThreadCheckerKeepAlive(false);
 			
 			udpManager.setStopListeningPackets(false);
+			udpManager.setStopThreadAnnounceTests(false);
 		}
 		tracker.setId(id);
 		tracker.setPort(port);

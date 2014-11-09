@@ -117,6 +117,9 @@ public class RedundancyManager implements Runnable {
 				{
 					generateDatabaseForPeersAndTorrents ( packet );
 				}
+				else if(isConfirmToStore(packet)){
+					storeTemporalData();
+				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received info..." + messageReceived);
 			}
@@ -127,7 +130,7 @@ public class RedundancyManager implements Runnable {
 	
 	private void generateDatabaseForPeersAndTorrents ( DatagramPacket packet )
 	{
-		System.out.println("Coming a backup message... ¿Is for me? ");
+		System.out.println("Coming a backup message... ï¿½Is for me? ");
 		String [] partsMessage = new String(packet.getData()).split("%:%");
 		String idMessage = partsMessage[0];
 		String inicioOFin = partsMessage[1];
@@ -177,6 +180,11 @@ public class RedundancyManager implements Runnable {
 				sizeActual++;	
 			}
 		}
+	}
+	
+	private void storeTemporalData(){
+		//TODO: When we handle peers also
+		System.out.println("CONFIRM TO STORE");
 	}
 	private void checkIfAllAreReadyToStore(DatagramPacket packet){
 		int num=globalManager.getTracker().getTrackersActivos().size();
@@ -364,19 +372,7 @@ public class RedundancyManager implements Runnable {
 	private String generateCorrectIDMessage(String originID) {
 		return originID+ ":" + CORRECT_ID_MESSAGE+ ":";
 	}
-	private void sendReadyToStoreMessage() {
 
-		String message = generateReadyToStoreMessage();
-		byte[] messageBytes = message.getBytes();
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
-				messageBytes.length, inetAddress, globalManager.getTracker()
-						.getPort());
-		writeSocket(datagramPacket);
-	}
-	
-	private String generateReadyToStoreMessage() {
-		return globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE + ":";
-	}
 	
 	private void sendBackUpMessage( String idTracker ){
 		String [] message = generateBackUpMessage( idTracker );
@@ -469,6 +465,10 @@ public class RedundancyManager implements Runnable {
 	private boolean isReadyToStore(DatagramPacket packet){
 		String [] message = new String(packet.getData()).split(":");
 		return message[1].equals(READY_TO_STORE_MESSAGE);
+	}
+	private boolean isConfirmToStore(DatagramPacket packet){
+		String [] message = new String(packet.getData()).split(":");
+		return message[1].equals(CONFIRM_TO_STORE_MESSAGE);
 	}
 	
 	private boolean isKeepAliveMessage ( DatagramPacket packet )

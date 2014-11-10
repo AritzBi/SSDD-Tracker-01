@@ -94,8 +94,6 @@ public class RedundancyManager implements Runnable {
 		try {
 			DatagramPacket packet;
 			while (!stopListeningPackets) {
-				//byte[] buf = new byte[256];
-				//byte[] buf = new byte[2048];
 				if ( !choosingMaster ) {
 					byte[] buf = new byte[2048];
 					packet = new DatagramPacket(buf, buf.length);

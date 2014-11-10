@@ -44,10 +44,15 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	private synchronized void updateTable() {
 		
 			generateTrackersData();
-			model.setDataVector(rows, columnNames);
+			model.setRowCount(0);
+			for ( int i = 0; i < rows.length ; i++) 
+			{
+				model.addRow(rows[i]);
+			}
+			//model.setDataVector(rows, columnNames);
 			model.fireTableDataChanged();
 			configureSizesOfTable(table);
-			table.repaint();
+			//table.repaint();
 	
 	}
 

@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.codec.binary.Base64;
+
 import es.deusto.ssdd.tracker.vo.ActiveTracker;
 import es.deusto.ssdd.tracker.vo.Tracker;
 
@@ -50,17 +52,14 @@ public class RedundancyManager implements Runnable {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
 		readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
-		
 	}
 
 	@Override
-	public void run() {
-		
+	public void run() {	
 		createSocket();
 		generateThreadToSendKeepAliveMessages();
 		generateThreadToCheckActiveTrackers();
 		socketListeningPackets();
-		
 	}
 
 	private void createSocket() {
@@ -82,6 +81,7 @@ public class RedundancyManager implements Runnable {
 						Thread.sleep(4000);
 						sendKeepAliveMessage();
 					} catch (InterruptedException e) {
+						System.err.println("**INTERRUPTED EXCEPTION..." + e.getMessage() );
 						e.printStackTrace();
 					}
 				}
@@ -97,7 +97,7 @@ public class RedundancyManager implements Runnable {
 				//byte[] buf = new byte[256];
 				//byte[] buf = new byte[2048];
 				if ( !choosingMaster ) {
-					byte[] buf = new byte[1024];
+					byte[] buf = new byte[2048];
 					packet = new DatagramPacket(buf, buf.length);
 					socket.receive(packet);
 					if ( isKeepAliveMessage(packet) )
@@ -134,12 +134,12 @@ public class RedundancyManager implements Runnable {
 	
 	private void generateDatabaseForPeersAndTorrents ( DatagramPacket packet )
 	{
-		System.out.println("Coming a backup message... ï¿½Is for me? ");
+		System.out.println("Coming a backup message... ¿Is for me? ");
 		String [] partsMessage = new String(packet.getData()).split("%:%");
 		String idMessage = partsMessage[0];
 		String inicioOFin = partsMessage[1];
 		String totalBytes = partsMessage[2];
-		byte[] bytes = partsMessage[4].getBytes();
+		byte[] bytes = Base64.decodeBase64(partsMessage[4].getBytes());
 		if ( idMessage.equals(getTracker().getId()))
 		{
 			if ( ficheroDB == null )
@@ -157,9 +157,13 @@ public class RedundancyManager implements Runnable {
 				File fileDest = new File ( newFileName );
 				FileOutputStream file;
 				try {
+					long length = fileDest.length();
 					file = new FileOutputStream(fileDest);
 					System.out.println("Writing the file...");
-					System.err.println("Total size dest: " + new String ( ficheroDB ) );
+					if ( length > 0 )
+					{
+						file.write((new String()).getBytes());
+					}
 					file.write(ficheroDB);
 					file.flush();
 					file.close();
@@ -189,7 +193,7 @@ public class RedundancyManager implements Runnable {
 	
 	private void storeTemporalData(){
 		//TODO: When we handle peers also
-		System.out.println("CONFIRM TO STORE");
+		System.out.println("STORING...");
 	}
 	private void checkIfAllAreReadyToStore(DatagramPacket packet){
 		int num=globalManager.getTracker().getTrackersActivos().size();
@@ -213,7 +217,6 @@ public class RedundancyManager implements Runnable {
 		if(originId.equals(getTracker().getId())&&waitingToHaveID)
 		{
 			waitingToHaveID = false;
-			generateNewDatabaseForTracker();
 		}
 			
 		
@@ -416,23 +419,28 @@ public class RedundancyManager implements Runnable {
         catch (IOException e) {
         	System.err.println("** IO EX: Error reading the file " + e.getMessage() );
         }
+		String mensaje = Base64.encodeBase64String(bytes);
         File newFile = new File ( "src/info_" + getTracker().getId() + ".db" );
+        long lengthFile = newFile.length();
         FileOutputStream fileOutputStream = null;
         try {
         	fileOutputStream = new FileOutputStream(newFile);
-        	  fileOutputStream.write(bytes);
+        	if ( lengthFile > 0 )
+        	{
+        		fileOutputStream.write((new String()).getBytes() );
+        	}
+        	  fileOutputStream.write(Base64.decodeBase64(mensaje));
+        	  fileOutputStream.flush();
               fileOutputStream.close();
 		} catch (FileNotFoundException e) {
 			System.err.println("** FILE " + newFile.getPath() + " NOT FOUND ** " + e.getMessage() );
 		} catch (IOException e) {
 			System.err.println("** IO EX: Error writing new file " + e.getMessage() );
 		}
-      
         
 	}
 
 	private String[] generateBackUpMessage( String idTracker ) {
-		//Take the .db file of the master
 		File file = new File ("src/info_" + getTracker().getId() + ".db");
 		byte[] bytes = null;
 	    FileInputStream fis = null;
@@ -453,7 +461,6 @@ public class RedundancyManager implements Runnable {
         catch (IOException e) {
         	System.err.println("** IO EX: Error reading the file " + e.getMessage() );
         }
-        System.err.println("Total bytes origin: " + bytes );
         //Calculate the length of the message
         int messageLength = 0;
         if ( bytes.length % 1024 ==0 )
@@ -472,13 +479,14 @@ public class RedundancyManager implements Runnable {
         	partMessage = fillArrayBytes(i, partMessage, bytes);
         	if ( i >= (bytes.length - 1024) )
         	{
-        		message[kMessage] = idTracker + "%:%" + FIN + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + partMessage + "%:%";
+        		
+        		message[kMessage] = idTracker + "%:%" + FIN + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + Base64.encodeBase64String ( partMessage  ) + "%:%";
         		kMessage++;
         	}
         	else
         	{
         		//INICIO on the fragment: a way to know that there are more incoming messages
-        		message[kMessage] = idTracker + "%:%" + INICIO + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + partMessage + "%:%";
+        		message[kMessage] = idTracker + "%:%" + INICIO + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + Base64.encodeBase64String ( partMessage ) + "%:%";
         		kMessage++;
         	}
         	

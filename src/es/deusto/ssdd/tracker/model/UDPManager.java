@@ -14,16 +14,18 @@ public class UDPManager implements Runnable {
 
 	private List<Observer> observers;
 	private GlobalManager globalManager;
+	private TopicManager topicManager;
 
 	private MulticastSocket socket;
 	private InetAddress inetAddress;
 	private boolean stopListeningPackets = false;
 	private boolean stopThreadAnnounceTests = false;
-	private static String READY_TO_STORE_MESSAGE = "ReadyToStore";
+	
 
 	public UDPManager() {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
+		topicManager = TopicManager.getInstance();
 	}
 
 	@Override
@@ -58,7 +60,7 @@ public class UDPManager implements Runnable {
 				if (isConnectRequestMessage(packet)) {
 					// New thread to send a response
 				} else if (isAnnounceRequestMessage(packet)) {
-					this.sendReadyToStoreMessage();
+					topicManager.publishReadyToStoreMessage();
 				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received message: " + messageReceived);
@@ -107,7 +109,7 @@ public class UDPManager implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
+	}/**
 
 	private void sendReadyToStoreMessage() {
 		String message = generateReadyToStoreMessage();
@@ -122,7 +124,7 @@ public class UDPManager implements Runnable {
 		return globalManager.getTracker().getId() + ":"
 				+ READY_TO_STORE_MESSAGE + ":";
 	}
-
+	**/
 	/**
 	 * Method used to know if the received UDP packet is a connect request
 	 * message
@@ -151,7 +153,6 @@ public class UDPManager implements Runnable {
 	 * 
 	 * @param datagramPacket
 	 */
-	@SuppressWarnings("unused")
 	private synchronized void writeSocket(DatagramPacket datagramPacket) {
 		try {
 			socket.send(datagramPacket);

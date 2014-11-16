@@ -12,19 +12,30 @@ import java.net.MulticastSocket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.jms.JMSException;
+import javax.jms.MapMessage;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.jms.TextMessage;
+
+import org.apache.activemq.command.ActiveMQMapMessage;
+import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.commons.codec.binary.Base64;
 
 import es.deusto.ssdd.tracker.vo.ActiveTracker;
+import es.deusto.ssdd.tracker.vo.Constants;
 import es.deusto.ssdd.tracker.vo.Tracker;
 
-public class RedundancyManager implements Runnable {
+public class RedundancyManager implements Runnable,MessageListener {
 
 	private List<Observer> observers;
 	private GlobalManager globalManager;
+	private TopicManager topicManager;
 
 	private MulticastSocket socket;
 	private InetAddress inetAddress;
@@ -32,9 +43,7 @@ public class RedundancyManager implements Runnable {
 	private boolean stopThreadKeepAlive = false;
 	private boolean stopThreadCheckerKeepAlive = false;
 	private ConcurrentHashMap<String,Boolean> readyToStoreTrackers;
-	private static String TYPE_KEEP_ALIVE_MESSAGE = "KeepAlive";
-	private static String READY_TO_STORE_MESSAGE = "ReadyToStore";
-	private static String CONFIRM_TO_STORE_MESSAGE = "ConfirmToStore";
+	
 	private static String BACKUP_MESSAGE = "BackUpMessage";
 	private static String ERROR_ID_MESSAGE="IncorrectId";
 	private static String CORRECT_ID_MESSAGE="CorrectId";
@@ -51,11 +60,18 @@ public class RedundancyManager implements Runnable {
 	public RedundancyManager() {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
+		topicManager = TopicManager.getInstance();
 		readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
 	}
 
 	@Override
-	public void run() {	
+	public void run() {
+		topicManager.subscribeTopicKeepAliveMessages(this);
+		topicManager.subscribeTopicConfirmToStoreMessages(this);
+		topicManager.subscribeTopicReadyToStoreMessages(this);
+		
+		topicManager.publishKeepAliveMessage();
+		
 		createSocket();
 		generateThreadToSendKeepAliveMessages();
 		generateThreadToCheckActiveTrackers();
@@ -79,7 +95,7 @@ public class RedundancyManager implements Runnable {
 				while (!stopThreadKeepAlive) {
 					try {
 						Thread.sleep(4000);
-						sendKeepAliveMessage();
+						topicManager.publishKeepAliveMessage();
 					} catch (InterruptedException e) {
 						System.err.println("**INTERRUPTED EXCEPTION..." + e.getMessage() );
 						e.printStackTrace();
@@ -95,7 +111,8 @@ public class RedundancyManager implements Runnable {
 			DatagramPacket packet;
 			while (!stopListeningPackets) {
 				if ( !choosingMaster ) {
-					byte[] buf = new byte[2048];
+					topicManager.start();
+					/**byte[] buf = new byte[2048];
 					packet = new DatagramPacket(buf, buf.length);
 					socket.receive(packet);
 					if ( isKeepAliveMessage(packet) )
@@ -122,12 +139,84 @@ public class RedundancyManager implements Runnable {
 						storeTemporalData();
 					}
 					String messageReceived = new String(packet.getData());
-					System.out.println("Received info..." + messageReceived);
+					System.out.println("Received info..." + messageReceived);**/
 				}
 			}
-		} catch (IOException e) {
+		} catch (JMSException e) {
 			System.err.println("** IO EXCEPTION: Error while listening packets from the socket... " + e.getMessage() );
 		}
+	}
+	
+	@Override
+	public void onMessage(Message message) {		
+		if (message != null) {
+			try {
+				System.out.println("   - TopicListener: " + message.getClass().getSimpleName() + " received!");
+				
+				if (message.getClass().getCanonicalName().equals(ActiveMQTextMessage.class.getCanonicalName())) {
+					System.out.println("     - TopicListener: TextMessage '" + ((TextMessage)message).getText());
+				} else if (message.getClass().getCanonicalName().equals(ActiveMQMapMessage.class.getCanonicalName())) {
+					System.out.println("     - TopicListener: MapMessage");				
+					MapMessage mapMsg = ((MapMessage) message);
+					//We obtain the type of the message
+					String typeMessage = getTypeMessage(mapMsg);
+					
+					//Iterate over the different data of the message
+					@SuppressWarnings("unchecked")
+					Enumeration<String> mapKeys = (Enumeration<String>)mapMsg.getMapNames();
+					String key = null;
+					List<Object> data = new ArrayList<Object>();
+					System.out.println("TYPE OF MESSAGE: " + typeMessage );
+					while (mapKeys.hasMoreElements()) {
+						key = mapKeys.nextElement();
+						if ( key != null & !key.equals("") )
+						{
+							data.add(mapMsg.getObject(key));
+						}
+						System.out.println("       + " + key + ": " + mapMsg.getObject(key));
+					}
+					
+					if ( typeMessage.equals(Constants.TYPE_KEEP_ALIVE_MESSAGE))
+					{
+						saveActiveTracker(data.toArray());
+					}
+					else if ( typeMessage.equals(Constants.TYPE_READY_TO_STORE_MESSAGE))
+					{
+						if(getTracker().isMaster())
+						{
+							checkIfAllAreReadyToStore(data.toArray());
+						}
+					}
+					else if ( typeMessage.equals(Constants.TYPE_CONFIRM_TO_STORE_MESSAGE))
+					{
+						storeTemporalData();
+					}
+									
+				}
+			
+			} catch (Exception ex) {
+				System.err.println("# TopicListener error: " + ex.getMessage());
+			}
+		}		
+	}
+	@SuppressWarnings("unchecked")
+	private String getTypeMessage ( MapMessage message ) {
+		
+		Enumeration<String> propertyNames;
+		String typeMessage = "";
+		try {
+			propertyNames = (Enumeration<String>)message.getPropertyNames();
+			while ( propertyNames.hasMoreElements()) {
+				String propertyName = propertyNames.nextElement();
+				if ( propertyName.equals("TypeMessage"))
+				{
+					typeMessage = message.getStringProperty(propertyName);
+				}
+			}
+		} catch (JMSException e) {
+			e.printStackTrace();
+		}
+		return typeMessage;
 	}
 	
 	private void generateDatabaseForPeersAndTorrents ( DatagramPacket packet )
@@ -193,19 +282,20 @@ public class RedundancyManager implements Runnable {
 		//TODO: When we handle peers also
 		System.out.println("STORING...");
 	}
-	private void checkIfAllAreReadyToStore(DatagramPacket packet){
-		int num=globalManager.getTracker().getTrackersActivos().size();
-		String[] messageReceived = new String ( packet.getData() ).split(":");
-		String id = messageReceived[0];
+	
+	private void checkIfAllAreReadyToStore( Object... data ){
+		int num= getTracker().getTrackersActivos().size();
+		String id = (String) data[0];
 		readyToStoreTrackers.put(id, true);
 		int numReady=0;
 		for ( Boolean bool : readyToStoreTrackers.values() ){
 			if(bool)
 				numReady++;
 		}
+
 		if(num-1 == numReady){
 			readyToStoreTrackers.clear();
-			sendConfirmToStoreMessage();
+			topicManager.publishConfirmToStoreMessage();
 		}
 	}
 	
@@ -245,11 +335,10 @@ public class RedundancyManager implements Runnable {
 		return false;
 	}
 	
-	private void saveActiveTracker ( DatagramPacket packet )
+	private void saveActiveTracker ( Object... data )
 	{
-		String[] messageReceived = new String ( packet.getData() ).split(":");
-		String id = messageReceived[0];
-		String master = messageReceived[1];
+		boolean master = (Boolean) data[0];
+		String id = (String) data[1];
 		
 		ConcurrentHashMap<String,ActiveTracker> activeTrackers = globalManager.getTracker().getTrackersActivos();
 		System.out.println("For tracker " + getTracker().getId() + " : Current Active Trackers " + getTracker().getTrackersActivos().values().toString() );
@@ -263,7 +352,7 @@ public class RedundancyManager implements Runnable {
 			}
 			ActiveTracker activeTracker = activeTrackers.get(id);
 			activeTracker.setLastKeepAlive(new Date());
-			activeTracker.setMaster(getBoolean(master));
+			activeTracker.setMaster(master);
 			notifyObservers( new String("EditActiveTracker") );
 		}
 		else
@@ -290,7 +379,7 @@ public class RedundancyManager implements Runnable {
 				activeTracker.setActive(true);
 				activeTracker.setId(id);
 				activeTracker.setLastKeepAlive(new Date() );
-				activeTracker.setMaster(getBoolean(master));
+				activeTracker.setMaster(master);
 				//Add the new active tracker to the list
 				getTracker().addActiveTracker(activeTracker);
 				System.out.println("ADD: New tracker into the Active Trackers " + getTracker().getTrackersActivos().values().toString() );
@@ -298,7 +387,7 @@ public class RedundancyManager implements Runnable {
 				notifyObservers( new String("NewActiveTracker") );
 			}
 			else {
-				if ( !getBoolean(master) )
+				if ( !master )
 				{
 					calculatePossibleId(id);
 				}
@@ -331,15 +420,15 @@ public class RedundancyManager implements Runnable {
 	
 	/*** SEND MESSAGES TO OTHER TRACKERS ***/
 	
-	private void sendConfirmToStoreMessage() {
+	/**private void sendConfirmToStoreMessage() {
 		String confirmToStoreMessage = generateConfirmToStoreMessage();
 		byte[] messageBytes = confirmToStoreMessage.getBytes();
 		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
 				messageBytes.length, inetAddress, globalManager.getTracker()
 						.getPort());
 		writeSocket(datagramPacket);
-	}
-	
+	}**/
+	/**
 	private void sendKeepAliveMessage() {
 
 		String message = generateKeepAliveMessage();
@@ -349,7 +438,7 @@ public class RedundancyManager implements Runnable {
 						.getPort());
 		this.sentKeepAlive=true;
 		writeSocket(datagramPacket);
-	}
+	}**/
 	
 	private void sendErrorIDMessage(int originID,int candidateID){
 		String message = generateIDErrorMessage(originID,candidateID);
@@ -369,13 +458,13 @@ public class RedundancyManager implements Runnable {
 		writeSocket(datagramPacket);
 	}
 	
-	private String generateKeepAliveMessage() {
+	/**private String generateKeepAliveMessage() {
 		return getTracker().getId() + ":" + getTracker().isMaster() + ":" + TYPE_KEEP_ALIVE_MESSAGE + ":";
-	}
+	}**/
 	
-	private String generateConfirmToStoreMessage() {
+	/**private String generateConfirmToStoreMessage() {
 		return getTracker().getId() + ":" + CONFIRM_TO_STORE_MESSAGE + ":";
-	}
+	}**/
 	private String generateIDErrorMessage(int originID,int candidateID) {
 		return originID+ ":" + ERROR_ID_MESSAGE+ ":"+candidateID+":";
 	}
@@ -512,15 +601,15 @@ public class RedundancyManager implements Runnable {
 	
 	/*** CHECK THE TYPES OF THE RECEIVED MESSAGES **/
 	
-	private boolean isReadyToStore(DatagramPacket packet){
+	/**private boolean isReadyToStore(DatagramPacket packet){
 		String [] message = new String(packet.getData()).split(":");
 		return message[1].equals(READY_TO_STORE_MESSAGE);
 	}
 	private boolean isConfirmToStore(DatagramPacket packet){
 		String [] message = new String(packet.getData()).split(":");
 		return message[1].equals(CONFIRM_TO_STORE_MESSAGE);
-	}
-	
+	}**/
+	/**
 	private boolean isKeepAliveMessage ( DatagramPacket packet )
 	{
 		String [] message = new String(packet.getData()).split(":");
@@ -533,7 +622,7 @@ public class RedundancyManager implements Runnable {
 			return false;
 		}
 	}
-	
+	**/
 	private boolean isBackUpMessage ( DatagramPacket packet ) {
 		String [] message = new String(packet.getData()).split("%:%");
 		if ( message.length >= 5 )

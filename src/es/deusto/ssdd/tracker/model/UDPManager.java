@@ -60,7 +60,8 @@ public class UDPManager implements Runnable {
 				if (isConnectRequestMessage(packet)) {
 					// New thread to send a response
 				} else if (isAnnounceRequestMessage(packet)) {
-					topicManager.publishReadyToStoreMessage();
+						topicManager.publishReadyToStoreMessage();
+					
 				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received message: " + messageReceived);

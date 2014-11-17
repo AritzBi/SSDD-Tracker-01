@@ -22,6 +22,7 @@ public class TopicManager {
 	private String topicKeepAliveMessagesJNDIName = "jndi.ssdd.keepalivemessages";
 	private String topicReadyToStoreMessagesJNDIName = "jndi.ssdd.readytostoremessages";
 	private String topicConfirmToStoreMessagesJNDIName = "jndi.ssdd.confirmtostoremessages";
+	private String topicIncorrectIdMessagesJNDIName = "jndi.ssdd.incorrectidmessages";
 
 	private TopicConnection topicConnection = null;
 	private TopicSession topicSession = null;
@@ -30,7 +31,6 @@ public class TopicManager {
 
 	private GlobalManager globalManager;
 	private Context ctx = null;
-	private String clientID = "";
 	private static TopicManager instance = null;
 
 	private TopicManager() {
@@ -42,9 +42,9 @@ public class TopicManager {
 					.lookup(connectionFactoryName);
 
 			topicConnection = topicConnectionFactory.createTopicConnection();
-			clientID = "TrackerSubscriber_"
-					+ globalManager.getTracker().getId();
-			topicConnection.setClientID(clientID);
+			//clientID = "TrackerSubscriber_"
+			//		+ globalManager.getTracker().getId();
+			//topicConnection.setClientID(clientID);
 
 			topicSession = topicConnection.createTopicSession(false,
 					Session.AUTO_ACKNOWLEDGE);
@@ -62,6 +62,32 @@ public class TopicManager {
 			instance = new TopicManager();
 		}
 		return instance;
+	}
+	
+	public void publishIncorrectIdMessage( String originId, String candidateId ) {
+		try {
+			Topic topicIncorrectIdMessages = (Topic) ctx
+					.lookup(topicIncorrectIdMessagesJNDIName);
+
+			TopicPublisher topicPublisher = topicSession
+					.createPublisher(topicIncorrectIdMessages);
+			// Map Message
+			MapMessage mapMessage = topicSession.createMapMessage();
+
+			// Message Properties
+			mapMessage.setStringProperty("TypeMessage", Constants.TYPE_ERROR_ID_MESSAGE);
+
+			// Message Body
+			mapMessage.setString("OriginId", originId );
+			mapMessage.setString("CandidateId", candidateId );
+
+			topicPublisher.publish(mapMessage);
+			System.out.println("- MapMessage sent to the Topic!");
+		} catch (JMSException e) {
+			System.err.println("# JMS Exception Error " + e.getMessage());
+		} catch (NamingException e) {
+			System.err.println("# Name Exception Error " + e.getMessage());
+		}
 	}
 
 	public void publishKeepAliveMessage() {
@@ -193,7 +219,7 @@ public class TopicManager {
 
 		try {
 			topicSubscriber.close();
-			topicSession.unsubscribe(clientID);
+			//topicSession.unsubscribe(clientID);
 			topicSession.close();
 			topicConnection.close();
 

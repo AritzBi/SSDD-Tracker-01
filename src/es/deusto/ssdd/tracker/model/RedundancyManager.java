@@ -45,7 +45,6 @@ public class RedundancyManager implements Runnable,MessageListener {
 	private ConcurrentHashMap<String,Boolean> readyToStoreTrackers;
 	
 	private static String BACKUP_MESSAGE = "BackUpMessage";
-	private static String ERROR_ID_MESSAGE="IncorrectId";
 	private static String CORRECT_ID_MESSAGE="CorrectId";
 	
 	private static String PATH_BASE_SQLITE_FILE = "src/base_database.db";
@@ -70,7 +69,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 		topicManager.subscribeTopicConfirmToStoreMessages(this);
 		topicManager.subscribeTopicReadyToStoreMessages(this);
 		
-		topicManager.publishKeepAliveMessage();
+		//topicManager.publishKeepAliveMessage();
 		
 		createSocket();
 		generateThreadToSendKeepAliveMessages();
@@ -191,6 +190,10 @@ public class RedundancyManager implements Runnable,MessageListener {
 					{
 						storeTemporalData();
 					}
+					else if ( typeMessage.equals(Constants.TYPE_ERROR_ID_MESSAGE))
+					{
+						
+					}
 									
 				}
 			
@@ -293,7 +296,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 				numReady++;
 		}
 
-		if(num-1 == numReady){
+		if(num == numReady){
 			readyToStoreTrackers.clear();
 			topicManager.publishConfirmToStoreMessage();
 		}
@@ -413,7 +416,8 @@ public class RedundancyManager implements Runnable,MessageListener {
 				break;
 			}
 		}
-		sendErrorIDMessage(Integer.parseInt(originId),candidateID);
+		topicManager.publishIncorrectIdMessage ( originId, String.valueOf(candidateID) );
+		//sendErrorIDMessage(Integer.parseInt(originId),candidateID);
 		
 		
 	}
@@ -440,14 +444,14 @@ public class RedundancyManager implements Runnable,MessageListener {
 		writeSocket(datagramPacket);
 	}**/
 	
-	private void sendErrorIDMessage(int originID,int candidateID){
-		String message = generateIDErrorMessage(originID,candidateID);
-		byte[] messageBytes = message.getBytes();
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
-				messageBytes.length, inetAddress, globalManager.getTracker()
-						.getPort());
-		writeSocket(datagramPacket);
-	}
+//	private void sendErrorIDMessage(int originID,int candidateID){
+//		String message = generateIDErrorMessage(originID,candidateID);
+//		byte[] messageBytes = message.getBytes();
+//		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+//				messageBytes.length, inetAddress, globalManager.getTracker()
+//						.getPort());
+//		writeSocket(datagramPacket);
+//	}
 	
 	private void sendCorrectIDMessage(String originID){
 		String message = generateCorrectIDMessage(originID);
@@ -465,9 +469,9 @@ public class RedundancyManager implements Runnable,MessageListener {
 	/**private String generateConfirmToStoreMessage() {
 		return getTracker().getId() + ":" + CONFIRM_TO_STORE_MESSAGE + ":";
 	}**/
-	private String generateIDErrorMessage(int originID,int candidateID) {
-		return originID+ ":" + ERROR_ID_MESSAGE+ ":"+candidateID+":";
-	}
+//	private String generateIDErrorMessage(int originID,int candidateID) {
+//		return originID+ ":" + ERROR_ID_MESSAGE+ ":"+candidateID+":";
+//	}
 	private String generateCorrectIDMessage(String originID) {
 		return originID+ ":" + CORRECT_ID_MESSAGE+ ":";
 	}
@@ -634,11 +638,11 @@ public class RedundancyManager implements Runnable,MessageListener {
 		String [] message = new String(packet.getData()).split(":");
 		return message[1].equals(CORRECT_ID_MESSAGE);
 	}
-	private boolean isErrorIDMessage(DatagramPacket packet){
-		String [] message = new String(packet.getData()).split(":");
-		return message[1].equals(ERROR_ID_MESSAGE);
-	}
-	
+//	private boolean isErrorIDMessage(DatagramPacket packet){
+//		String [] message = new String(packet.getData()).split(":");
+//		return message[1].equals(ERROR_ID_MESSAGE);
+//	}
+//	
 	
 	/*** [END] CHECK THE TYPES OF THE RECEIVED MESSAGES **/
 	

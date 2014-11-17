@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.ArrayList;
@@ -36,6 +35,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 	private List<Observer> observers;
 	private GlobalManager globalManager;
 	private TopicManager topicManager;
+	private QueueManager queueManager;
 
 	private MulticastSocket socket;
 	private InetAddress inetAddress;
@@ -44,23 +44,22 @@ public class RedundancyManager implements Runnable,MessageListener {
 	private boolean stopThreadCheckerKeepAlive = false;
 	private ConcurrentHashMap<String,Boolean> readyToStoreTrackers;
 	
-	private static String BACKUP_MESSAGE = "BackUpMessage";
-	private static String CORRECT_ID_MESSAGE="CorrectId";
-	
 	private static String PATH_BASE_SQLITE_FILE = "src/base_database.db";
-	private static String INICIO = "I";
-	private static String FIN = "F";
-	private byte[] ficheroDB = null;
-	private int sizeActual = 0;
+//	private static String INICIO = "I";
+//	private static String FIN = "F";
+//	private byte[] ficheroDB = null;
+//	private int sizeActual = 0;
 	private boolean sentKeepAlive;
 	private boolean waitingToHaveID=true;
 	private boolean choosingMaster=false;
 	
 	public RedundancyManager() {
 		observers = new ArrayList<Observer>();
+		readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
+		
 		globalManager = GlobalManager.getInstance();
 		topicManager = TopicManager.getInstance();
-		readyToStoreTrackers=new ConcurrentHashMap<String,Boolean>();
+		queueManager = QueueManager.getInstance();
 	}
 
 	@Override
@@ -68,8 +67,8 @@ public class RedundancyManager implements Runnable,MessageListener {
 		topicManager.subscribeTopicKeepAliveMessages(this);
 		topicManager.subscribeTopicConfirmToStoreMessages(this);
 		topicManager.subscribeTopicReadyToStoreMessages(this);
-		
-		//topicManager.publishKeepAliveMessage();
+		topicManager.subscribeTopicIncorrectIdMessages(this);
+		queueManager.receiveMessagesForMySpecificId(this);
 		
 		createSocket();
 		generateThreadToSendKeepAliveMessages();
@@ -107,10 +106,11 @@ public class RedundancyManager implements Runnable,MessageListener {
 
 	private void socketListeningPackets() {
 		try {
-			DatagramPacket packet;
+			//DatagramPacket packet;
 			while (!stopListeningPackets) {
 				if ( !choosingMaster ) {
 					topicManager.start();
+					queueManager.start();
 					/**byte[] buf = new byte[2048];
 					packet = new DatagramPacket(buf, buf.length);
 					socket.receive(packet);
@@ -157,6 +157,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 				} else if (message.getClass().getCanonicalName().equals(ActiveMQMapMessage.class.getCanonicalName())) {
 					System.out.println("     - TopicListener: MapMessage");				
 					MapMessage mapMsg = ((MapMessage) message);
+					
 					//We obtain the type of the message
 					String typeMessage = getTypeMessage(mapMsg);
 					
@@ -192,7 +193,15 @@ public class RedundancyManager implements Runnable,MessageListener {
 					}
 					else if ( typeMessage.equals(Constants.TYPE_ERROR_ID_MESSAGE))
 					{
-						
+						checkErrorIDMessage(data.toArray());
+					}
+					else if ( typeMessage.equals(Constants.TYPE_CORRECT_ID_MESSAGE))
+					{
+						checkIfCorrectBelongsToTracker(data.toArray());
+					}
+					else if ( typeMessage.equals(Constants.TYPE_BACKUP_MESSAGE))
+					{
+						generateDatabaseForPeersAndTorrents(data.toArray());
 					}
 									
 				}
@@ -222,64 +231,87 @@ public class RedundancyManager implements Runnable,MessageListener {
 		return typeMessage;
 	}
 	
-	private void generateDatabaseForPeersAndTorrents ( DatagramPacket packet )
-	{
-		System.out.println("Coming a backup message... ¿Is for me? ");
-		String [] partsMessage = new String(packet.getData()).split("%:%");
-		String idMessage = partsMessage[0];
-		String inicioOFin = partsMessage[1];
-		String totalBytes = partsMessage[2];
-		byte[] bytes = Base64.decodeBase64(partsMessage[4].getBytes());
-		if ( idMessage.equals(getTracker().getId()))
-		{
-			if ( ficheroDB == null )
+	private void generateDatabaseForPeersAndTorrents ( Object... data ) {
+		byte [] bytesOfDbFile = (byte[]) data[0];
+		String newFileName = "src/info_" + getTracker().getId() + ".db";
+		File fileDest = new File ( newFileName );
+		FileOutputStream file = null;
+		try {
+			long length = fileDest.length();
+			file = new FileOutputStream(fileDest);
+			System.out.println("Writing the file...");
+			if ( length > 0 )
 			{
-				ficheroDB = new byte [Integer.valueOf(totalBytes)];
+				file.write((new String()).getBytes());
 			}
-			if (inicioOFin.equals(INICIO) )
-			{
-				addBytesToNewSQliteFile ( bytes );
-			}
-			else if ( inicioOFin.equals(FIN) )
-			{
-				addBytesToNewSQliteFile ( bytes );
-				String newFileName = "src/info_" + getTracker().getId() + ".db";
-				File fileDest = new File ( newFileName );
-				FileOutputStream file;
-				try {
-					long length = fileDest.length();
-					file = new FileOutputStream(fileDest);
-					System.out.println("Writing the file...");
-					if ( length > 0 )
-					{
-						file.write((new String()).getBytes());
-					}
-					file.write(ficheroDB);
-					file.flush();
-					file.close();
-				} catch (FileNotFoundException e) {
-					System.err.println(" ** FILE NOT FOUND: Not found " +  newFileName + " " + e.getMessage() );
-				} catch (IOException e) {
-					System.err.println(" ** IO EXCEPTION: Error writing the file " + newFileName + " " + e.getMessage() );
-				}
-				ficheroDB = null;
-				sizeActual = 0;
-			}
-
+			file.write(bytesOfDbFile);
+			file.flush();
+			file.close();
+		} catch (FileNotFoundException e) {
+			System.err.println(" ** FILE NOT FOUND: Not found " +  newFileName + " " + e.getMessage() );
+		} catch (IOException e) {
+			System.err.println(" ** IO EXCEPTION: Error writing the file " + newFileName + " " + e.getMessage() );
 		}
 	}
 	
-	private void addBytesToNewSQliteFile ( byte [] bytes )
-	{
-		for ( byte currentByte: bytes )
-		{
-			if ( sizeActual < ficheroDB.length )
-			{
-				ficheroDB[sizeActual] = currentByte;
-				sizeActual++;	
-			}
-		}
-	}
+//	private void generateDatabaseForPeersAndTorrents ( DatagramPacket packet )
+//	{
+//		System.out.println("Coming a backup message... ¿Is for me? ");
+//		String [] partsMessage = new String(packet.getData()).split("%:%");
+//		String idMessage = partsMessage[0];
+//		String inicioOFin = partsMessage[1];
+//		String totalBytes = partsMessage[2];
+//		byte[] bytes = Base64.decodeBase64(partsMessage[4].getBytes());
+//		if ( idMessage.equals(getTracker().getId()))
+//		{
+//			if ( ficheroDB == null )
+//			{
+//				ficheroDB = new byte [Integer.valueOf(totalBytes)];
+//			}
+//			if (inicioOFin.equals(INICIO) )
+//			{
+//				addBytesToNewSQliteFile ( bytes );
+//			}
+//			else if ( inicioOFin.equals(FIN) )
+//			{
+//				addBytesToNewSQliteFile ( bytes );
+//				String newFileName = "src/info_" + getTracker().getId() + ".db";
+//				File fileDest = new File ( newFileName );
+//				FileOutputStream file;
+//				try {
+//					long length = fileDest.length();
+//					file = new FileOutputStream(fileDest);
+//					System.out.println("Writing the file...");
+//					if ( length > 0 )
+//					{
+//						file.write((new String()).getBytes());
+//					}
+//					file.write(ficheroDB);
+//					file.flush();
+//					file.close();
+//				} catch (FileNotFoundException e) {
+//					System.err.println(" ** FILE NOT FOUND: Not found " +  newFileName + " " + e.getMessage() );
+//				} catch (IOException e) {
+//					System.err.println(" ** IO EXCEPTION: Error writing the file " + newFileName + " " + e.getMessage() );
+//				}
+//				ficheroDB = null;
+//				sizeActual = 0;
+//			}
+//
+//		}
+//	}
+	
+//	private void addBytesToNewSQliteFile ( byte [] bytes )
+//	{
+//		for ( byte currentByte: bytes )
+//		{
+//			if ( sizeActual < ficheroDB.length )
+//			{
+//				ficheroDB[sizeActual] = currentByte;
+//				sizeActual++;	
+//			}
+//		}
+//	}
 	
 	private void storeTemporalData(){
 		//TODO: When we handle peers also
@@ -302,9 +334,8 @@ public class RedundancyManager implements Runnable,MessageListener {
 		}
 	}
 	
-	private void checkIfCorrectBelongsToTracker(DatagramPacket packet){
-		String[] messageReceived = new String ( packet.getData() ).split(":");
-		String originId = messageReceived[0];
+	private void checkIfCorrectBelongsToTracker(Object...data ){
+		String originId = (String)data[0];
 		if(originId.equals(getTracker().getId())&&waitingToHaveID)
 		{
 			waitingToHaveID = false;
@@ -312,14 +343,14 @@ public class RedundancyManager implements Runnable,MessageListener {
 			
 		
 	}
-	private void checkErrorIDMessage(DatagramPacket packet){
-		String[] messageReceived = new String ( packet.getData() ).split(":");
-		String originId = messageReceived[0];
-		String candidateId = messageReceived[2];
+	private void checkErrorIDMessage(Object... data){
+		String candidateId = (String)data[0];
+		String originId = (String)data[1];
+		
 		if(originId.equals(getTracker().getId())&&waitingToHaveID)
 		{
 			getTracker().setId(candidateId);
-			this.notifyObservers(new String ("NewIdTracker") );
+			notifyObservers(new String ("NewIdTracker") );
 			waitingToHaveID = false;
 		}
 			
@@ -329,15 +360,15 @@ public class RedundancyManager implements Runnable,MessageListener {
 	 * @param condicion
 	 * @return
 	 */
-	private boolean getBoolean ( String condicion )
-	{
-		if ( condicion.equals("true") )
-			return true;
-		else if (condicion.equals("false") )
-			return false;
-		return false;
-	}
-	
+//	private boolean getBoolean ( String condicion )
+//	{
+//		if ( condicion.equals("true") )
+//			return true;
+//		else if (condicion.equals("false") )
+//			return false;
+//		return false;
+//	}
+//	
 	private void saveActiveTracker ( Object... data )
 	{
 		boolean master = (Boolean) data[0];
@@ -348,11 +379,11 @@ public class RedundancyManager implements Runnable,MessageListener {
 		//Already exists an active tracker with the coming id
 		if ( activeTrackers.containsKey(id ) )
 		{
-			if(id.equals( getTracker().getId())  && sentKeepAlive){
-				sentKeepAlive=false;
-			}else if(id.equals( getTracker().getId())  && !sentKeepAlive){
-				calculatePossibleId(id);
-			}
+			//if(id.equals( getTracker().getId())  && sentKeepAlive){
+			//	sentKeepAlive=false;
+			//}else if(id.equals( getTracker().getId())  && !sentKeepAlive){
+			//	calculatePossibleId(id);
+			//}
 			ActiveTracker activeTracker = activeTrackers.get(id);
 			activeTracker.setLastKeepAlive(new Date());
 			activeTracker.setMaster(master);
@@ -371,8 +402,8 @@ public class RedundancyManager implements Runnable,MessageListener {
 				}
 				else 
 				{
-					sendBackUpMessage( id );
-					sendCorrectIDMessage(id);
+					queueManager.sendBackUpMessage( id );
+					queueManager.sendCorrectIdMessage(id);
 				}
 			}
 			
@@ -417,7 +448,6 @@ public class RedundancyManager implements Runnable,MessageListener {
 			}
 		}
 		topicManager.publishIncorrectIdMessage ( originId, String.valueOf(candidateID) );
-		//sendErrorIDMessage(Integer.parseInt(originId),candidateID);
 		
 		
 	}
@@ -453,14 +483,14 @@ public class RedundancyManager implements Runnable,MessageListener {
 //		writeSocket(datagramPacket);
 //	}
 	
-	private void sendCorrectIDMessage(String originID){
-		String message = generateCorrectIDMessage(originID);
-		byte[] messageBytes = message.getBytes();
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
-				messageBytes.length, inetAddress, globalManager.getTracker()
-						.getPort());
-		writeSocket(datagramPacket);
-	}
+//	private void sendCorrectIDMessage(String originID){
+//		String message = generateCorrectIDMessage(originID);
+//		byte[] messageBytes = message.getBytes();
+//		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+//				messageBytes.length, inetAddress, globalManager.getTracker()
+//						.getPort());
+//		writeSocket(datagramPacket);
+//	}
 	
 	/**private String generateKeepAliveMessage() {
 		return getTracker().getId() + ":" + getTracker().isMaster() + ":" + TYPE_KEEP_ALIVE_MESSAGE + ":";
@@ -472,22 +502,22 @@ public class RedundancyManager implements Runnable,MessageListener {
 //	private String generateIDErrorMessage(int originID,int candidateID) {
 //		return originID+ ":" + ERROR_ID_MESSAGE+ ":"+candidateID+":";
 //	}
-	private String generateCorrectIDMessage(String originID) {
-		return originID+ ":" + CORRECT_ID_MESSAGE+ ":";
-	}
+//	private String generateCorrectIDMessage(String originID) {
+//		return originID+ ":" + CORRECT_ID_MESSAGE+ ":";
+//	}
 
 	
-	private void sendBackUpMessage( String idTracker ){
-		String [] message = generateBackUpMessage( idTracker );
-		for ( String currentMessage : message )
-		{
-			byte[] messageBytes = currentMessage.getBytes();
-			DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
-				messageBytes.length, inetAddress, globalManager.getTracker()
-						.getPort());
-			writeSocket(datagramPacket);
-		}
-	}
+//	private void sendBackUpMessage( String idTracker ){
+//		String [] message = generateBackUpMessage( idTracker );
+//		for ( String currentMessage : message )
+//		{
+//			byte[] messageBytes = currentMessage.getBytes();
+//			DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+//				messageBytes.length, inetAddress, globalManager.getTracker()
+//						.getPort());
+//			writeSocket(datagramPacket);
+//		}
+//	}
 	
 	private void generateNewDatabaseForTracker () {
 		File file = new File (PATH_BASE_SQLITE_FILE);
@@ -531,113 +561,114 @@ public class RedundancyManager implements Runnable,MessageListener {
         
 	}
 
-	private String[] generateBackUpMessage( String idTracker ) {
-		File file = new File ("src/info_" + getTracker().getId() + ".db");
-		byte[] bytes = null;
-	    FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(file);
-		} catch (FileNotFoundException e) {
-			System.err.println("** FILE " + PATH_BASE_SQLITE_FILE + " NOT FOUND ** " + e.getMessage() );
-		}
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        byte[] buf = new byte[1024];
-        try {
-            for (int readNum; (readNum = fis.read(buf)) != -1;) {
-                bos.write(buf, 0, readNum);
-            }
-            bytes = bos.toByteArray();
-            fis.close();
-        }
-        catch (IOException e) {
-        	System.err.println("** IO EX: Error reading the file " + e.getMessage() );
-        }
-        //Calculate the length of the message
-        int messageLength = 0;
-        if ( bytes.length % 1024 ==0 )
-        {
-        	messageLength = bytes.length / 1024;
-        }
-        else
-        {
-        	messageLength = bytes.length / 1024 + 1;
-        }
-        String [] message = new String[messageLength];
-        int kMessage = 0;
-        for ( int i = 0; i < bytes.length; i = i + 1024 ) 
-        {
-        	byte [] partMessage = new byte[1024];
-        	partMessage = fillArrayBytes(i, partMessage, bytes);
-        	if ( i >= (bytes.length - 1024) )
-        	{
-        		
-        		message[kMessage] = idTracker + "%:%" + FIN + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + Base64.encodeBase64String ( partMessage  ) + "%:%";
-        		kMessage++;
-        	}
-        	else
-        	{
-        		//INICIO on the fragment: a way to know that there are more incoming messages
-        		message[kMessage] = idTracker + "%:%" + INICIO + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + Base64.encodeBase64String ( partMessage ) + "%:%";
-        		kMessage++;
-        	}
-        	
-        }
-        return message;
-	}
-	/**
-	 * 
-	 * @param j. Know the positions of the @param data wants to be stored
-	 * @param tofill
-	 * @param data
-	 * @return
-	 */
-	private byte[] fillArrayBytes ( int j , byte [] tofill, byte[] data )
-	{
-		for ( int k = 0; k < tofill.length ; k++ )
-		{
-			tofill[k] = data[j];
-			j++;
-		}
-		return tofill;
-	}
+//	private String[] generateBackUpMessage( String idTracker ) {
+//		File file = new File ("src/info_" + getTracker().getId() + ".db");
+//		byte[] bytes = null;
+//	    FileInputStream fis = null;
+//		try {
+//			fis = new FileInputStream(file);
+//		} catch (FileNotFoundException e) {
+//			System.err.println("** FILE " + PATH_BASE_SQLITE_FILE + " NOT FOUND ** " + e.getMessage() );
+//		}
+//        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//        byte[] buf = new byte[1024];
+//        try {
+//            for (int readNum; (readNum = fis.read(buf)) != -1;) {
+//                bos.write(buf, 0, readNum);
+//            }
+//            bytes = bos.toByteArray();
+//            fis.close();
+//        }
+//        catch (IOException e) {
+//        	System.err.println("** IO EX: Error reading the file " + e.getMessage() );
+//        }
+//        //Calculate the length of the message
+//        int messageLength = 0;
+//        if ( bytes.length % 1024 ==0 )
+//        {
+//        	messageLength = bytes.length / 1024;
+//        }
+//        else
+//        {
+//        	messageLength = bytes.length / 1024 + 1;
+//        }
+//        queueManager.sendBackUpMessage(bytes, idTracker);
+//        String [] message = new String[messageLength];
+//        int kMessage = 0;
+//        for ( int i = 0; i < bytes.length; i = i + 1024 ) 
+//        {
+//        	byte [] partMessage = new byte[1024];
+//        	partMessage = fillArrayBytes(i, partMessage, bytes);
+//        	if ( i >= (bytes.length - 1024) )
+//        	{
+//        		
+//        		message[kMessage] = idTracker + "%:%" + FIN + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + Base64.encodeBase64String ( partMessage  ) + "%:%";
+//        		kMessage++;
+//        	}
+//        	else
+//        	{
+//        		//INICIO on the fragment: a way to know that there are more incoming messages
+//        		message[kMessage] = idTracker + "%:%" + INICIO + "%:%" + bytes.length + "%:%" + BACKUP_MESSAGE + "%:%" + Base64.encodeBase64String ( partMessage ) + "%:%";
+//        		kMessage++;
+//        	}
+//        	
+//        }
+//        return message;
+//	}
+//	/**
+//	 * 
+//	 * @param j. Know the positions of the @param data wants to be stored
+//	 * @param tofill
+//	 * @param data
+//	 * @return
+//	 */
+//	private byte[] fillArrayBytes ( int j , byte [] tofill, byte[] data )
+//	{
+//		for ( int k = 0; k < tofill.length ; k++ )
+//		{
+//			tofill[k] = data[j];
+//			j++;
+//		}
+//		return tofill;
+//	}
 	
 	/*** [END] SEND MESSAGES TO OTHER TRACKERS ***/
 	
 	/*** CHECK THE TYPES OF THE RECEIVED MESSAGES **/
 	
-	/**private boolean isReadyToStore(DatagramPacket packet){
-		String [] message = new String(packet.getData()).split(":");
-		return message[1].equals(READY_TO_STORE_MESSAGE);
-	}
-	private boolean isConfirmToStore(DatagramPacket packet){
-		String [] message = new String(packet.getData()).split(":");
-		return message[1].equals(CONFIRM_TO_STORE_MESSAGE);
-	}**/
-	/**
-	private boolean isKeepAliveMessage ( DatagramPacket packet )
-	{
-		String [] message = new String(packet.getData()).split(":");
-		if ( message.length > 2 )
-		{
-			return message[2].equals(TYPE_KEEP_ALIVE_MESSAGE);
-		}
-		else
-		{
-			return false;
-		}
-	}
-	**/
-	private boolean isBackUpMessage ( DatagramPacket packet ) {
-		String [] message = new String(packet.getData()).split("%:%");
-		if ( message.length >= 5 )
-			return message[3].equals(BACKUP_MESSAGE);
-		else
-			return false;
-	}
-	private boolean isCorrectIDMessage(DatagramPacket packet){
-		String [] message = new String(packet.getData()).split(":");
-		return message[1].equals(CORRECT_ID_MESSAGE);
-	}
+//	private boolean isReadyToStore(DatagramPacket packet){
+//		String [] message = new String(packet.getData()).split(":");
+//		return message[1].equals(READY_TO_STORE_MESSAGE);
+//	}
+//	private boolean isConfirmToStore(DatagramPacket packet){
+//		String [] message = new String(packet.getData()).split(":");
+//		return message[1].equals(CONFIRM_TO_STORE_MESSAGE);
+//	}
+//	
+//	private boolean isKeepAliveMessage ( DatagramPacket packet )
+//	{
+//		String [] message = new String(packet.getData()).split(":");
+//		if ( message.length > 2 )
+//		{
+//			return message[2].equals(TYPE_KEEP_ALIVE_MESSAGE);
+//		}
+//		else
+//		{
+//			return false;
+//		}
+//	}
+	
+//	private boolean isBackUpMessage ( DatagramPacket packet ) {
+//		String [] message = new String(packet.getData()).split("%:%");
+//		if ( message.length >= 5 )
+//			return message[3].equals(BACKUP_MESSAGE);
+//		else
+//			return false;
+//	}
+//	private boolean isCorrectIDMessage(DatagramPacket packet){
+//		String [] message = new String(packet.getData()).split(":");
+//		return message[1].equals(CORRECT_ID_MESSAGE);
+//	}
 //	private boolean isErrorIDMessage(DatagramPacket packet){
 //		String [] message = new String(packet.getData()).split(":");
 //		return message[1].equals(ERROR_ID_MESSAGE);
@@ -748,13 +779,13 @@ public class RedundancyManager implements Runnable,MessageListener {
 	 * 
 	 * @param datagramPacket
 	 */
-	private synchronized void writeSocket(DatagramPacket datagramPacket) {
-		try {
-			socket.send(datagramPacket);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+//	private synchronized void writeSocket(DatagramPacket datagramPacket) {
+//		try {
+//			socket.send(datagramPacket);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//	}
 
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
 	public void addObserver(Observer o) {

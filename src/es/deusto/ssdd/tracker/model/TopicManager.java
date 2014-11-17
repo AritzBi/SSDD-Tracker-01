@@ -1,5 +1,8 @@
 package es.deusto.ssdd.tracker.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.Session;
@@ -26,26 +29,25 @@ public class TopicManager {
 
 	private TopicConnection topicConnection = null;
 	private TopicSession topicSession = null;
-	private TopicSubscriber topicSubscriber = null;
 	private TopicConnectionFactory topicConnectionFactory = null;
 
 	private GlobalManager globalManager;
 	private Context ctx = null;
+	private List<TopicPublisher> topicPublishers = null;
+	private List<TopicSubscriber> topicSubscribers = null;
+	
 	private static TopicManager instance = null;
 
 	private TopicManager() {
 		globalManager = GlobalManager.getInstance();
-
+		topicPublishers = new ArrayList<TopicPublisher>();
+		topicSubscribers = new ArrayList<TopicSubscriber>();
+		
 		try {
 			ctx = new InitialContext();
 			topicConnectionFactory = (TopicConnectionFactory) ctx
 					.lookup(connectionFactoryName);
-
 			topicConnection = topicConnectionFactory.createTopicConnection();
-			//clientID = "TrackerSubscriber_"
-			//		+ globalManager.getTracker().getId();
-			//topicConnection.setClientID(clientID);
-
 			topicSession = topicConnection.createTopicSession(false,
 					Session.AUTO_ACKNOWLEDGE);
 
@@ -71,6 +73,7 @@ public class TopicManager {
 
 			TopicPublisher topicPublisher = topicSession
 					.createPublisher(topicIncorrectIdMessages);
+			topicPublishers.add(topicPublisher);
 			// Map Message
 			MapMessage mapMessage = topicSession.createMapMessage();
 
@@ -97,6 +100,7 @@ public class TopicManager {
 
 			TopicPublisher topicPublisher = topicSession
 					.createPublisher(topicKeepAliveMessages);
+			topicPublishers.add(topicPublisher);
 			// Map Message
 			MapMessage mapMessage = topicSession.createMapMessage();
 
@@ -124,6 +128,7 @@ public class TopicManager {
 
 			TopicPublisher topicPublisher = topicSession
 					.createPublisher(topicReadyToStoreMessages);
+			topicPublishers.add(topicPublisher);
 			// Map Message
 			MapMessage mapMessage = topicSession.createMapMessage();
 
@@ -151,6 +156,7 @@ public class TopicManager {
 
 			TopicPublisher topicPublisher = topicSession
 					.createPublisher(topicConfirmToStoreMessages);
+			topicPublishers.add(topicPublisher);
 			// Map Message
 			MapMessage mapMessage = topicSession.createMapMessage();
 
@@ -171,10 +177,6 @@ public class TopicManager {
 		}
 	}
 
-	public void start() throws JMSException {
-		topicConnection.start();
-	}
-
 	public void subscribeTopicKeepAliveMessages(
 			RedundancyManager redundancyManager) {
 		try {
@@ -183,6 +185,7 @@ public class TopicManager {
 
 			TopicSubscriber topicSubscriber = topicSession
 					.createSubscriber(topicKeepAliveMessages);
+			topicSubscribers.add(topicSubscriber);
 			topicSubscriber.setMessageListener(redundancyManager);
 		} catch (NamingException | JMSException e) {
 			e.printStackTrace();
@@ -196,6 +199,7 @@ public class TopicManager {
 					.lookup(topicReadyToStoreMessagesJNDIName);
 			TopicSubscriber topicSubscriber = topicSession
 					.createSubscriber(topicReadyToStoreMessages);
+			topicSubscribers.add(topicSubscriber);
 			topicSubscriber.setMessageListener(redundancyManager);
 		} catch (NamingException | JMSException e) {
 			e.printStackTrace();
@@ -209,19 +213,48 @@ public class TopicManager {
 					.lookup(topicConfirmToStoreMessagesJNDIName);
 			TopicSubscriber topicSubscriber = topicSession
 					.createSubscriber(topicConfirmToStoreMessages);
+			topicSubscribers.add(topicSubscriber);
 			topicSubscriber.setMessageListener(redundancyManager);
 		} catch (NamingException | JMSException e) {
 			e.printStackTrace();
 		}
 	}
+	
+	public void subscribeTopicIncorrectIdMessages(
+			RedundancyManager redundancyManager) {
+		try {
+			Topic topicIncorrectIdMessages = (Topic) ctx
+					.lookup(topicIncorrectIdMessagesJNDIName);
+
+			TopicSubscriber topicSubscriber = topicSession
+					.createSubscriber(topicIncorrectIdMessages);
+			topicSubscribers.add(topicSubscriber);
+			topicSubscriber.setMessageListener(redundancyManager);
+		} catch (NamingException | JMSException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void start() throws JMSException {
+		topicConnection.start();
+	}
 
 	public void close() {
 
 		try {
-			topicSubscriber.close();
-			//topicSession.unsubscribe(clientID);
+			for ( TopicSubscriber topicSubscriber: topicSubscribers)
+			{
+				topicSubscriber.close();
+			}
+			for ( TopicPublisher topicPublisher: topicPublishers)
+			{
+				topicPublisher.close();
+			}
 			topicSession.close();
 			topicConnection.close();
+			
+			instance = null;
+			
 
 		} catch (JMSException e) {
 			System.err.println("* TopicManager Error: " + e.getMessage());

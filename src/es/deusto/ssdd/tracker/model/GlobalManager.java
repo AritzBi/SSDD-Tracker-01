@@ -14,8 +14,12 @@ public class GlobalManager {
 	
 	private RedundancyManager redundancyManager;
 	private UDPManager udpManager;
+	private TopicManager topicManager;
+	private QueueManager queueManager;
+	
 	private GlobalManager() {
 		tracker = new Tracker();
+		
 	}
 	
 	/**
@@ -23,6 +27,9 @@ public class GlobalManager {
 	 */
 	public void start() 
 	{
+		topicManager = TopicManager.getInstance();
+		queueManager = QueueManager.getInstance();
+		
 		new Thread(redundancyManager).start();
 		new Thread(udpManager).start();
 	}
@@ -78,13 +85,18 @@ public class GlobalManager {
 	 */
 	public void disconnect () 
 	{
+		topicManager.close();
+		queueManager.close();
+		
 		redundancyManager.setStopListeningPackets(true);
 		redundancyManager.setStopThreadKeepAlive(true);
 		redundancyManager.setStopThreadCheckerKeepAlive(true);
 		
 		udpManager.setStopListeningPackets(true);
 		udpManager.setStopThreadAnnounceTests(true);
+		
 		getTracker().getTrackersActivos().clear();
+		
 	}
 	
 	public List<ActiveTracker> getActiveTrackers()

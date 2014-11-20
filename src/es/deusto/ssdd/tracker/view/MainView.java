@@ -8,10 +8,13 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
+import es.deusto.ssdd.tracker.controller.ConfigurationController;
+
 public class MainView extends JFrame {
 
 	private static final long serialVersionUID = -5839974224728234589L;
-
+	private ConfigurationController configurationController;
+	
 	private Map<String, JPanel> panels;
 
 	public MainView(Map<String, JPanel> panels) {
@@ -33,6 +36,7 @@ public class MainView extends JFrame {
 
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
+				configurationController.closeWindow();
 				System.exit(0);
 			}
 		});
@@ -42,5 +46,14 @@ public class MainView extends JFrame {
 		for (String titulo : panels.keySet()) {
 			tabbedPane.add(titulo, panels.get(titulo));
 		}
+	}
+
+	public ConfigurationController getConfigurationController() {
+		return configurationController;
+	}
+
+	public void setConfigurationController(
+			ConfigurationController configurationController) {
+		this.configurationController = configurationController;
 	}
 }

@@ -94,9 +94,15 @@ public class GlobalManager {
 		
 		udpManager.setStopListeningPackets(true);
 		udpManager.setStopThreadAnnounceTests(true);
-		
 		getTracker().getTrackersActivos().clear();
+		redundancyManager.notifyObservers("DisconnectTracker");
 		
+	}
+	
+	public void closeWindow()
+	{
+		topicManager.closeWindow();
+		queueManager.closeWindow();
 	}
 	
 	public List<ActiveTracker> getActiveTrackers()

@@ -44,7 +44,7 @@ public class MainProgram {
 		panels.put("Peers List", peerListView);
 		
 		MainView mainWindow = new MainView ( panels );
-		
+		mainWindow.setConfigurationController(configurationController);
 		mainWindow.setVisible(true);
 	}
 }

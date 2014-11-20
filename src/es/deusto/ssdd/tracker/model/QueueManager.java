@@ -149,17 +149,23 @@ public class QueueManager {
 	
 	public void close() {
 
+	}
+	
+	public void closeWindow() {
 		try {
-			queueSender.close();
-			queueSession.close();
-			queueConnection.close();
-			queueReceiver.close();
-			
+			if ( queueSender != null )
+				queueSender.close();
+			if ( queueReceiver != null )
+				queueReceiver.close();
+			if ( queueSession != null )
+				queueSession.close();
+			if ( queueConnection != null )
+				queueConnection.close();
 			queueManager = null;
+			
 		} catch (JMSException e) {
 			System.err.println("* TopicManager Error: " + e.getMessage());
 		}
-
 	}
 	
 	private Tracker getTracker() {

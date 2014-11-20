@@ -78,6 +78,10 @@ public class ConfigurationController {
 		globalManager.disconnect();
 	}
 	
+	public void closeWindow() {
+		globalManager.closeWindow();
+	}
+	
 	public Tracker getTracker() {
 		return globalManager.getTracker();
 	}

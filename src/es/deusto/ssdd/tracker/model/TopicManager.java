@@ -240,8 +240,8 @@ public class TopicManager {
 	}
 
 	public void close() {
-
 		try {
+			
 			for ( TopicSubscriber topicSubscriber: topicSubscribers)
 			{
 				topicSubscriber.close();
@@ -250,16 +250,25 @@ public class TopicManager {
 			{
 				topicPublisher.close();
 			}
-			topicSession.close();
-			topicConnection.close();
-			
-			instance = null;
-			
 
 		} catch (JMSException e) {
 			System.err.println("* TopicManager Error: " + e.getMessage());
 		}
-
+		
+	}
+	
+	public void closeWindow() {
+		try {
+			if ( topicSession != null )
+				topicSession.close();
+			if ( topicConnection != null )
+				topicConnection.close();
+			
+			instance = null;
+			
+		} catch (JMSException e) {
+			System.err.println("* TopicManager Error: " + e.getMessage());
+		}
 	}
 
 	private Tracker getTracker() {

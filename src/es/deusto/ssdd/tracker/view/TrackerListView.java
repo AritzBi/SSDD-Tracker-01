@@ -35,7 +35,7 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	
 	@Override
 	public void update(Observable o, Object arg) {
-		if ( arg.equals("NewActiveTracker") || arg.equals("DeleteActiveTracker") || arg.equals("EditActiveTracker") )
+		if ( arg.equals("NewActiveTracker") || arg.equals("DeleteActiveTracker") || arg.equals("EditActiveTracker") || arg.equals("DisconnectTracker") )
 		{
 			updateTable();
 		}

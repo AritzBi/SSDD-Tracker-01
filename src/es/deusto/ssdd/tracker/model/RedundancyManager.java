@@ -93,6 +93,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 				while (!stopThreadKeepAlive) {
 					try {
 						Thread.sleep(4000);
+						sentKeepAlive=true;
 						topicManager.publishKeepAliveMessage();
 					} catch (InterruptedException e) {
 						System.err.println("**INTERRUPTED EXCEPTION..." + e.getMessage() );
@@ -108,7 +109,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 		try {
 			//DatagramPacket packet;
 			while (!stopListeningPackets) {
-				if ( !choosingMaster ) {
+				if ( !isChoosingMaster() ) {
 					topicManager.start();
 					queueManager.start();
 					/**byte[] buf = new byte[2048];
@@ -355,20 +356,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 		}
 			
 	}
-	/**
-	 * Simple method used to convert a String to boolean
-	 * @param condicion
-	 * @return
-	 */
-//	private boolean getBoolean ( String condicion )
-//	{
-//		if ( condicion.equals("true") )
-//			return true;
-//		else if (condicion.equals("false") )
-//			return false;
-//		return false;
-//	}
-//	
+
 	private void saveActiveTracker ( Object... data )
 	{
 		boolean master = (Boolean) data[0];
@@ -376,58 +364,62 @@ public class RedundancyManager implements Runnable,MessageListener {
 		
 		ConcurrentHashMap<String,ActiveTracker> activeTrackers = globalManager.getTracker().getTrackersActivos();
 		System.out.println("For tracker " + getTracker().getId() + " : Current Active Trackers " + getTracker().getTrackersActivos().values().toString() );
-		//Already exists an active tracker with the coming id
-		if ( activeTrackers.containsKey(id ) )
+		if ( !waitingToHaveID )
 		{
-			//if(id.equals( getTracker().getId())  && sentKeepAlive){
-			//	sentKeepAlive=false;
-			//}else if(id.equals( getTracker().getId())  && !sentKeepAlive){
-			//	calculatePossibleId(id);
-			//}
-			ActiveTracker activeTracker = activeTrackers.get(id);
-			activeTracker.setLastKeepAlive(new Date());
-			activeTracker.setMaster(master);
-			notifyObservers( new String("EditActiveTracker") );
-		}
-		else
-		{
-			boolean continuar = true;
-			//Process necessary when coming a new id and the tracker is the master tracker
-			if ( globalManager.getTracker().isMaster())
+			//Already exists an active tracker with the coming id
+			if ( activeTrackers.containsKey(id ) )
 			{
-				if ( id.compareTo(getTracker().getId()) <= -1 || ( id.equals(getTracker().getId()) ) )
-				{
-					//not save the new active tracker
-					continuar = false;
-				}
-				else 
-				{
-					queueManager.sendBackUpMessage( id );
-					queueManager.sendCorrectIdMessage(id);
-				}
-			}
-			
-			if ( continuar ) {
-				
-				ActiveTracker activeTracker = new ActiveTracker();
-				activeTracker.setActive(true);
-				activeTracker.setId(id);
-				activeTracker.setLastKeepAlive(new Date() );
-				activeTracker.setMaster(master);
-				//Add the new active tracker to the list
-				getTracker().addActiveTracker(activeTracker);
-				System.out.println("ADD: New tracker into the Active Trackers " + getTracker().getTrackersActivos().values().toString() );
-				//Notify to the observers to update the UI
-				notifyObservers( new String("NewActiveTracker") );
-			}
-			else {
-				if ( !master )
-				{
+				if(id.equals( getTracker().getId())  && sentKeepAlive){
+					sentKeepAlive=false;
+				}else if(id.equals( getTracker().getId())  && !sentKeepAlive){
 					calculatePossibleId(id);
 				}
-				else
+				ActiveTracker activeTracker = activeTrackers.get(id);
+				activeTracker.setLastKeepAlive(new Date());
+				activeTracker.setMaster(master);
+				notifyObservers( new String("EditActiveTracker") );
+			}
+			else
+			{
+				boolean continuar = true;
+				//Process necessary when coming a new id and the tracker is the master tracker
+				if ( globalManager.getTracker().isMaster())
 				{
-					System.err.println("ERROR: I am Master, and I am receiving a message with other tracker same id and also master...");
+					//No accept ids less than mine and equals than me and is not set as master
+					if ( id.compareTo(getTracker().getId()) <= -1 || ( id.equals(getTracker().getId()) && !master  ) )
+					{
+						//not save the new active tracker
+						continuar = false;
+					}
+					else 
+					{
+						queueManager.sendBackUpMessage( id );
+						queueManager.sendCorrectIdMessage(id);
+					}
+				}
+				
+				if ( continuar ) {
+					
+					ActiveTracker activeTracker = new ActiveTracker();
+					activeTracker.setActive(true);
+					activeTracker.setId(id);
+					activeTracker.setLastKeepAlive(new Date() );
+					activeTracker.setMaster(master);
+					//Add the new active tracker to the list
+					getTracker().addActiveTracker(activeTracker);
+					System.out.println("ADD: New tracker into the Active Trackers " + getTracker().getTrackersActivos().values().toString() );
+					//Notify to the observers to update the UI
+					notifyObservers( new String("NewActiveTracker") );
+				}
+				else {
+					if ( !master )
+					{
+						calculatePossibleId(id);
+					}
+					else
+					{
+						System.err.println("ERROR: I am Master, and I am receiving a message with other tracker same id and also master...");
+					}
 				}
 			}
 		}
@@ -709,8 +701,9 @@ public class RedundancyManager implements Runnable,MessageListener {
 	private void electMasterInitiating()
 	{
 		System.out.println("Start electing the new master");
+		setChoosingMaster(true);
 		ConcurrentHashMap<String, ActiveTracker> mapActiveTrackers = getTracker().getTrackersActivos();
-		if ( mapActiveTrackers.size() == 1 && mapActiveTrackers.containsKey(getTracker().getId()) )
+		if ( mapActiveTrackers.size() == 0 ||( mapActiveTrackers.size() == 1 && mapActiveTrackers.containsKey(getTracker().getId()) ) )
 		{
 			System.out.println("Only exists one active tracker and I am this one, so " + getTracker().getId() + "is the new master");
 			getTracker().setMaster(true);
@@ -749,6 +742,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 				getTracker().setMaster(true);
 			}
 		}
+		setChoosingMaster(false);
 	}
 	
 	private void checkActiveTrackers() {
@@ -798,7 +792,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 		this.observers.remove(o);
 	}
 
-	private void notifyObservers(Object param) {
+	public void notifyObservers(Object param) {
 		for (Observer observer : this.observers) {
 			if (observer != null) {
 				observer.update(null, param);
@@ -838,5 +832,13 @@ public class RedundancyManager implements Runnable,MessageListener {
 	
 	private Tracker getTracker() {
 		return globalManager.getTracker();
+	}
+
+	public synchronized boolean isChoosingMaster() {
+		return choosingMaster;
+	}
+
+	public synchronized void setChoosingMaster(boolean choosingMaster) {
+		this.choosingMaster = choosingMaster;
 	}
 }

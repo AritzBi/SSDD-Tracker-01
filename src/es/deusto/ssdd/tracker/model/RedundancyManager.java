@@ -64,6 +64,9 @@ public class RedundancyManager implements Runnable,MessageListener {
 
 	@Override
 	public void run() {
+		topicManager = TopicManager.getInstance();
+		queueManager = QueueManager.getInstance();
+		
 		topicManager.subscribeTopicKeepAliveMessages(this);
 		topicManager.subscribeTopicConfirmToStoreMessages(this);
 		topicManager.subscribeTopicReadyToStoreMessages(this);
@@ -94,6 +97,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 					try {
 						Thread.sleep(4000);
 						sentKeepAlive=true;
+						System.out.println("Method generateThreadToSendKeepAliveMessages: " + "publishKeepAliveMessage()");
 						topicManager.publishKeepAliveMessage();
 					} catch (InterruptedException e) {
 						System.err.println("**INTERRUPTED EXCEPTION..." + e.getMessage() );
@@ -331,6 +335,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 
 		if(num == numReady){
 			readyToStoreTrackers.clear();
+			System.out.println("Method checkIfAllAreReadyToStore: " + "publishConfirmToStoreMessage()");
 			topicManager.publishConfirmToStoreMessage();
 		}
 	}
@@ -374,10 +379,12 @@ public class RedundancyManager implements Runnable,MessageListener {
 				}else if(id.equals( getTracker().getId())  && !sentKeepAlive){
 					calculatePossibleId(id);
 				}
-				ActiveTracker activeTracker = activeTrackers.get(id);
-				activeTracker.setLastKeepAlive(new Date());
-				activeTracker.setMaster(master);
-				notifyObservers( new String("EditActiveTracker") );
+				if ( getTracker().isMaster() == master ) {
+					ActiveTracker activeTracker = activeTrackers.get(id);
+					activeTracker.setLastKeepAlive(new Date());
+					activeTracker.setMaster(master);
+					notifyObservers( new String("EditActiveTracker") );
+				}
 			}
 			else
 			{
@@ -439,6 +446,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 				break;
 			}
 		}
+		System.out.println("Method calculatePossibleId: " + "publishIncorrectIdMessage()");
 		topicManager.publishIncorrectIdMessage ( originId, String.valueOf(candidateID) );
 		
 		

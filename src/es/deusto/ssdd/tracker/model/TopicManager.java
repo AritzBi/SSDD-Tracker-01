@@ -35,14 +35,14 @@ public class TopicManager {
 	private Context ctx = null;
 	private List<TopicPublisher> topicPublishers = null;
 	private List<TopicSubscriber> topicSubscribers = null;
-	
+
 	private static TopicManager instance = null;
 
 	private TopicManager() {
 		globalManager = GlobalManager.getInstance();
 		topicPublishers = new ArrayList<TopicPublisher>();
 		topicSubscribers = new ArrayList<TopicSubscriber>();
-		
+
 		try {
 			ctx = new InitialContext();
 			topicConnectionFactory = (TopicConnectionFactory) ctx
@@ -65,8 +65,8 @@ public class TopicManager {
 		}
 		return instance;
 	}
-	
-	public void publishIncorrectIdMessage( String originId, String candidateId ) {
+
+	public void publishIncorrectIdMessage(String originId, String candidateId) {
 		try {
 			Topic topicIncorrectIdMessages = (Topic) ctx
 					.lookup(topicIncorrectIdMessagesJNDIName);
@@ -78,11 +78,12 @@ public class TopicManager {
 			MapMessage mapMessage = topicSession.createMapMessage();
 
 			// Message Properties
-			mapMessage.setStringProperty("TypeMessage", Constants.TYPE_ERROR_ID_MESSAGE);
+			mapMessage.setStringProperty("TypeMessage",
+					Constants.TYPE_ERROR_ID_MESSAGE);
 
 			// Message Body
-			mapMessage.setString("OriginId", originId );
-			mapMessage.setString("CandidateId", candidateId );
+			mapMessage.setString("OriginId", originId);
+			mapMessage.setString("CandidateId", candidateId);
 
 			topicPublisher.publish(mapMessage);
 			System.out.println("- MapMessage sent to the Topic!");
@@ -95,6 +96,8 @@ public class TopicManager {
 
 	public void publishKeepAliveMessage() {
 		try {
+			System.out.println("INSTANCE: " + instance );
+			if ( instance != null ) {
 			Topic topicKeepAliveMessages = (Topic) ctx
 					.lookup(topicKeepAliveMessagesJNDIName);
 
@@ -113,6 +116,7 @@ public class TopicManager {
 
 			topicPublisher.publish(mapMessage);
 			System.out.println("- MapMessage sent to the Topic!");
+			}
 		} catch (JMSException e) {
 			System.err.println("# JMS Exception Error " + e.getMessage());
 		} catch (NamingException e) {
@@ -180,13 +184,17 @@ public class TopicManager {
 	public void subscribeTopicKeepAliveMessages(
 			RedundancyManager redundancyManager) {
 		try {
-			Topic topicKeepAliveMessages = (Topic) ctx
-					.lookup(topicKeepAliveMessagesJNDIName);
+			System.out.println("INSTANCE: " + instance );
+			if ( instance != null ) {
+				Topic topicKeepAliveMessages = (Topic) ctx
+						.lookup(topicKeepAliveMessagesJNDIName);
 
-			TopicSubscriber topicSubscriber = topicSession
-					.createSubscriber(topicKeepAliveMessages);
-			topicSubscribers.add(topicSubscriber);
-			topicSubscriber.setMessageListener(redundancyManager);
+				TopicSubscriber topicSubscriber = topicSession
+						.createSubscriber(topicKeepAliveMessages);
+				topicSubscribers.add(topicSubscriber);
+				topicSubscriber.setMessageListener(redundancyManager);
+			}
+
 		} catch (NamingException | JMSException e) {
 			e.printStackTrace();
 		}
@@ -219,7 +227,7 @@ public class TopicManager {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void subscribeTopicIncorrectIdMessages(
 			RedundancyManager redundancyManager) {
 		try {
@@ -234,41 +242,34 @@ public class TopicManager {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void start() throws JMSException {
 		topicConnection.start();
 	}
 
 	public void close() {
 		try {
-			
-			for ( TopicSubscriber topicSubscriber: topicSubscribers)
-			{
+			for (TopicSubscriber topicSubscriber : topicSubscribers) {
 				topicSubscriber.close();
 			}
-			for ( TopicPublisher topicPublisher: topicPublishers)
-			{
+			for (TopicPublisher topicPublisher : topicPublishers) {
 				topicPublisher.close();
 			}
-
-		} catch (JMSException e) {
-			System.err.println("* TopicManager Error: " + e.getMessage());
-		}
-		
-	}
-	
-	public void closeWindow() {
-		try {
-			if ( topicSession != null )
+			
+			if (topicSession != null)
 				topicSession.close();
-			if ( topicConnection != null )
+			if (topicConnection != null)
 				topicConnection.close();
-			
+			System.out.println("INSTANCIA ANTERIOR: " + instance);
 			instance = null;
-			
+			System.out.println("INSTANCIA POSTERIOR: " + instance);
 		} catch (JMSException e) {
 			System.err.println("* TopicManager Error: " + e.getMessage());
 		}
+	}
+
+	public void closeWindow() {
+		
 	}
 
 	private Tracker getTracker() {

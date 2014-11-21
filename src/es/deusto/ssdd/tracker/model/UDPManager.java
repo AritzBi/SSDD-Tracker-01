@@ -30,6 +30,7 @@ public class UDPManager implements Runnable {
 
 	@Override
 	public void run() {
+		topicManager = topicManager.getInstance();
 		createSocket();
 		generateAnnounceTests();
 		socketListeningPackets();

@@ -103,8 +103,6 @@ public class GlobalManager {
 	
 	public void closeWindow()
 	{
-		if ( topicManager != null )
-			topicManager.closeWindow();
 		if ( queueManager != null )
 			queueManager.closeWindow();
 	}

@@ -30,7 +30,7 @@ public class UDPManager implements Runnable {
 
 	@Override
 	public void run() {
-		topicManager = topicManager.getInstance();
+		topicManager = TopicManager.getInstance();
 		createSocket();
 		generateAnnounceTests();
 		socketListeningPackets();
@@ -155,13 +155,13 @@ public class UDPManager implements Runnable {
 	 * 
 	 * @param datagramPacket
 	 */
-	private synchronized void writeSocket(DatagramPacket datagramPacket) {
-		try {
-			socket.send(datagramPacket);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+//	private synchronized void writeSocket(DatagramPacket datagramPacket) {
+//		try {
+//			socket.send(datagramPacket);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//	}
 
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
 

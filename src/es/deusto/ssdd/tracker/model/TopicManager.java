@@ -52,9 +52,9 @@ public class TopicManager {
 					Session.AUTO_ACKNOWLEDGE);
 
 		} catch (NamingException e) {
-			System.err.println("** NAMING EXCEPTION " + e.getMessage());
+			System.err.println("# Name Exception Error (constructor TopicManager) " + e.getMessage());
 		} catch (JMSException e) {
-			System.err.println("** JMS EXCEPTION " + e.getMessage());
+			System.err.println("# JMS Exception Error (constructor TopicManager) " + e.getMessage());
 		}
 
 	}
@@ -68,124 +68,127 @@ public class TopicManager {
 
 	public void publishIncorrectIdMessage(String originId, String candidateId) {
 		try {
-			Topic topicIncorrectIdMessages = (Topic) ctx
-					.lookup(topicIncorrectIdMessagesJNDIName);
+			if (instance != null) {
+				Topic topicIncorrectIdMessages = (Topic) ctx
+						.lookup(topicIncorrectIdMessagesJNDIName);
 
-			TopicPublisher topicPublisher = topicSession
-					.createPublisher(topicIncorrectIdMessages);
-			topicPublishers.add(topicPublisher);
-			// Map Message
-			MapMessage mapMessage = topicSession.createMapMessage();
+				TopicPublisher topicPublisher = topicSession
+						.createPublisher(topicIncorrectIdMessages);
+				topicPublishers.add(topicPublisher);
+				// Map Message
+				MapMessage mapMessage = topicSession.createMapMessage();
 
-			// Message Properties
-			mapMessage.setStringProperty("TypeMessage",
-					Constants.TYPE_ERROR_ID_MESSAGE);
+				// Message Properties
+				mapMessage.setStringProperty("TypeMessage",
+						Constants.TYPE_ERROR_ID_MESSAGE);
 
-			// Message Body
-			mapMessage.setString("OriginId", originId);
-			mapMessage.setString("CandidateId", candidateId);
+				// Message Body
+				mapMessage.setString("OriginId", originId);
+				mapMessage.setString("CandidateId", candidateId);
 
-			topicPublisher.publish(mapMessage);
-			System.out.println("- MapMessage sent to the Topic!");
+				topicPublisher.publish(mapMessage);
+				System.out.println("- MapMessage sent to the Topic!");
+			}
 		} catch (JMSException e) {
-			System.err.println("# JMS Exception Error " + e.getMessage());
+			System.err.println("# JMS Exception Error (publishIncorrectIdMessage) " + e.getMessage());
 		} catch (NamingException e) {
-			System.err.println("# Name Exception Error " + e.getMessage());
+			System.err.println("# Name Exception Error (publishIncorrectIdMessage) " + e.getMessage());
 		}
 	}
 
 	public void publishKeepAliveMessage() {
 		try {
-			System.out.println("INSTANCE: " + instance );
-			if ( instance != null ) {
-			Topic topicKeepAliveMessages = (Topic) ctx
-					.lookup(topicKeepAliveMessagesJNDIName);
+			if (instance != null) {
+				Topic topicKeepAliveMessages = (Topic) ctx
+						.lookup(topicKeepAliveMessagesJNDIName);
 
-			TopicPublisher topicPublisher = topicSession
-					.createPublisher(topicKeepAliveMessages);
-			topicPublishers.add(topicPublisher);
-			// Map Message
-			MapMessage mapMessage = topicSession.createMapMessage();
+				TopicPublisher topicPublisher = topicSession
+						.createPublisher(topicKeepAliveMessages);
+				topicPublishers.add(topicPublisher);
+				// Map Message
+				MapMessage mapMessage = topicSession.createMapMessage();
 
-			// Message Properties
-			mapMessage.setStringProperty("TypeMessage", "KeepAlive");
+				// Message Properties
+				mapMessage.setStringProperty("TypeMessage", "KeepAlive");
 
-			// Message Body
-			mapMessage.setString("Id", getTracker().getId());
-			mapMessage.setBoolean("Master", getTracker().isMaster());
+				// Message Body
+				mapMessage.setString("Id", getTracker().getId());
+				mapMessage.setBoolean("Master", getTracker().isMaster());
 
-			topicPublisher.publish(mapMessage);
-			System.out.println("- MapMessage sent to the Topic!");
+				topicPublisher.publish(mapMessage);
+				System.out.println("- MapMessage sent to the Topic!");
 			}
 		} catch (JMSException e) {
-			System.err.println("# JMS Exception Error " + e.getMessage());
+			System.err.println("# JMS Exception Error (publishKeepAliveMessage) " + e.getMessage());
 		} catch (NamingException e) {
-			System.err.println("# Name Exception Error " + e.getMessage());
+			System.err.println("# Name Exception Error (publishKeepAliveMessage) " + e.getMessage());
 		}
 
 	}
 
 	public void publishReadyToStoreMessage() {
 		try {
-			Topic topicReadyToStoreMessages = (Topic) ctx
-					.lookup(topicReadyToStoreMessagesJNDIName);
+			if (instance != null) {
+				Topic topicReadyToStoreMessages = (Topic) ctx
+						.lookup(topicReadyToStoreMessagesJNDIName);
 
-			TopicPublisher topicPublisher = topicSession
-					.createPublisher(topicReadyToStoreMessages);
-			topicPublishers.add(topicPublisher);
-			// Map Message
-			MapMessage mapMessage = topicSession.createMapMessage();
+				TopicPublisher topicPublisher = topicSession
+						.createPublisher(topicReadyToStoreMessages);
+				topicPublishers.add(topicPublisher);
+				// Map Message
+				MapMessage mapMessage = topicSession.createMapMessage();
 
-			// Message Properties
-			mapMessage.setStringProperty("TypeMessage",
-					Constants.TYPE_READY_TO_STORE_MESSAGE);
+				// Message Properties
+				mapMessage.setStringProperty("TypeMessage",
+						Constants.TYPE_READY_TO_STORE_MESSAGE);
 
-			// Message Body
-			mapMessage.setString("Id", getTracker().getId());
+				// Message Body
+				mapMessage.setString("Id", getTracker().getId());
 
-			topicPublisher.publish(mapMessage);
-			System.out.println("- MapMessage sent to the Topic!");
-
+				topicPublisher.publish(mapMessage);
+				System.out.println("- MapMessage sent to the Topic!");
+			}
 		} catch (JMSException e) {
-			System.err.println("# JMS Exception Error " + e.getMessage());
+			System.err.println("# JMS Exception Error (publishReadyToStoreMessage) " + e.getMessage());
 		} catch (NamingException e) {
-			System.err.println("# Name Exception Error " + e.getMessage());
+			System.err.println("# Name Exception Error (publishReadyToStoreMessage) " + e.getMessage());
 		}
 	}
 
 	public void publishConfirmToStoreMessage() {
 		try {
-			Topic topicConfirmToStoreMessages = (Topic) ctx
-					.lookup(topicConfirmToStoreMessagesJNDIName);
+			if (instance != null) {
+				Topic topicConfirmToStoreMessages = (Topic) ctx
+						.lookup(topicConfirmToStoreMessagesJNDIName);
 
-			TopicPublisher topicPublisher = topicSession
-					.createPublisher(topicConfirmToStoreMessages);
-			topicPublishers.add(topicPublisher);
-			// Map Message
-			MapMessage mapMessage = topicSession.createMapMessage();
+				TopicPublisher topicPublisher = topicSession
+						.createPublisher(topicConfirmToStoreMessages);
+				topicPublishers.add(topicPublisher);
+				// Map Message
+				MapMessage mapMessage = topicSession.createMapMessage();
 
-			// Message Properties
-			mapMessage.setStringProperty("TypeMessage",
-					Constants.TYPE_CONFIRM_TO_STORE_MESSAGE);
+				// Message Properties
+				mapMessage.setStringProperty("TypeMessage",
+						Constants.TYPE_CONFIRM_TO_STORE_MESSAGE);
 
-			// Message Body
-			mapMessage.setString("Id", getTracker().getId());
+				// Message Body
+				mapMessage.setString("Id", getTracker().getId());
 
-			topicPublisher.publish(mapMessage);
-			System.out.println("- MapMessage sent to the Topic!");
+				topicPublisher.publish(mapMessage);
+				System.out.println("- MapMessage sent to the Topic!");
+			}
 
 		} catch (JMSException e) {
-			System.err.println("# JMS Exception Error " + e.getMessage());
+			System.err.println("# JMS Exception Error (publishConfirmToStoreMessage) " + e.getMessage());
 		} catch (NamingException e) {
-			System.err.println("# Name Exception Error " + e.getMessage());
+			System.err.println("# Name Exception Error (publishConfirmToStoreMessage) " + e.getMessage());
 		}
 	}
 
 	public void subscribeTopicKeepAliveMessages(
 			RedundancyManager redundancyManager) {
 		try {
-			System.out.println("INSTANCE: " + instance );
-			if ( instance != null ) {
+			if (instance != null) {
 				Topic topicKeepAliveMessages = (Topic) ctx
 						.lookup(topicKeepAliveMessagesJNDIName);
 
@@ -194,52 +197,81 @@ public class TopicManager {
 				topicSubscribers.add(topicSubscriber);
 				topicSubscriber.setMessageListener(redundancyManager);
 			}
-
-		} catch (NamingException | JMSException e) {
-			e.printStackTrace();
+		} catch (JMSException e) {
+			System.err
+					.println("# JMS Exception Error (subscribeTopicKeepAliveMessages) "
+							+ e.getMessage());
+		} catch (NamingException e) {
+			System.err
+					.println("# Naming Exception Error (subscribeTopicKeepAliveMessages) "
+							+ e.getMessage());
 		}
 	}
 
 	public void subscribeTopicReadyToStoreMessages(
 			RedundancyManager redundancyManager) {
 		try {
-			Topic topicReadyToStoreMessages = (Topic) ctx
-					.lookup(topicReadyToStoreMessagesJNDIName);
-			TopicSubscriber topicSubscriber = topicSession
-					.createSubscriber(topicReadyToStoreMessages);
-			topicSubscribers.add(topicSubscriber);
-			topicSubscriber.setMessageListener(redundancyManager);
-		} catch (NamingException | JMSException e) {
-			e.printStackTrace();
+			if (instance != null) {
+				Topic topicReadyToStoreMessages = (Topic) ctx
+						.lookup(topicReadyToStoreMessagesJNDIName);
+				TopicSubscriber topicSubscriber = topicSession
+						.createSubscriber(topicReadyToStoreMessages);
+				topicSubscribers.add(topicSubscriber);
+				topicSubscriber.setMessageListener(redundancyManager);
+			}
+		} catch (JMSException e) {
+			System.err
+					.println("# JMS Exception Error (subscribeTopicReadyToStoreMessages) "
+							+ e.getMessage());
+		} catch (NamingException e) {
+			System.err
+					.println("# Naming Exception Error (subscribeTopicReadyToStoreMessages) "
+							+ e.getMessage());
 		}
 	}
 
 	public void subscribeTopicConfirmToStoreMessages(
 			RedundancyManager redundancyManager) {
 		try {
-			Topic topicConfirmToStoreMessages = (Topic) ctx
-					.lookup(topicConfirmToStoreMessagesJNDIName);
-			TopicSubscriber topicSubscriber = topicSession
-					.createSubscriber(topicConfirmToStoreMessages);
-			topicSubscribers.add(topicSubscriber);
-			topicSubscriber.setMessageListener(redundancyManager);
-		} catch (NamingException | JMSException e) {
-			e.printStackTrace();
+			if (instance != null) {
+				Topic topicConfirmToStoreMessages = (Topic) ctx
+						.lookup(topicConfirmToStoreMessagesJNDIName);
+				TopicSubscriber topicSubscriber = topicSession
+						.createSubscriber(topicConfirmToStoreMessages);
+				topicSubscribers.add(topicSubscriber);
+				topicSubscriber.setMessageListener(redundancyManager);
+			}
+		} catch (JMSException e) {
+			System.err
+					.println("# JMS Exception Error (subscribeTopicConfirmToStoreMessages) "
+							+ e.getMessage());
+		} catch (NamingException e) {
+			System.err
+					.println("# Naming Exception Error (subscribeTopicConfirmToStoreMessages) "
+							+ e.getMessage());
 		}
 	}
 
 	public void subscribeTopicIncorrectIdMessages(
 			RedundancyManager redundancyManager) {
 		try {
-			Topic topicIncorrectIdMessages = (Topic) ctx
-					.lookup(topicIncorrectIdMessagesJNDIName);
+			if (instance != null) {
+				Topic topicIncorrectIdMessages = (Topic) ctx
+						.lookup(topicIncorrectIdMessagesJNDIName);
 
-			TopicSubscriber topicSubscriber = topicSession
-					.createSubscriber(topicIncorrectIdMessages);
-			topicSubscribers.add(topicSubscriber);
-			topicSubscriber.setMessageListener(redundancyManager);
-		} catch (NamingException | JMSException e) {
-			e.printStackTrace();
+				TopicSubscriber topicSubscriber = topicSession
+						.createSubscriber(topicIncorrectIdMessages);
+				topicSubscribers.add(topicSubscriber);
+				topicSubscriber.setMessageListener(redundancyManager);
+			}
+		} catch (JMSException e) {
+			System.err
+					.println("# JMS Exception Error (subscribeTopicIncorrectIdMessages) "
+							+ e.getMessage());
+		} catch (NamingException e) {
+			System.err
+					.println("# Naming Exception Error (subscribeTopicIncorrectIdMessages) "
+							+ e.getMessage());
 		}
 	}
 
@@ -255,21 +287,15 @@ public class TopicManager {
 			for (TopicPublisher topicPublisher : topicPublishers) {
 				topicPublisher.close();
 			}
-			
+
 			if (topicSession != null)
 				topicSession.close();
 			if (topicConnection != null)
 				topicConnection.close();
-			System.out.println("INSTANCIA ANTERIOR: " + instance);
 			instance = null;
-			System.out.println("INSTANCIA POSTERIOR: " + instance);
 		} catch (JMSException e) {
-			System.err.println("* TopicManager Error: " + e.getMessage());
+			System.err.println("* JMS Exception Error (close): " + e.getMessage());
 		}
-	}
-
-	public void closeWindow() {
-		
 	}
 
 	private Tracker getTracker() {

@@ -12,7 +12,7 @@ public class TrackerListController {
 	private RedundancyManager redundancyManager;
 	private GlobalManager globalManager;
 
-	public TrackerListController(RedundancyManager redundancyManager ) {
+	public TrackerListController(RedundancyManager redundancyManager) {
 		this.redundancyManager = redundancyManager;
 		this.globalManager = GlobalManager.getInstance();
 	}
@@ -24,7 +24,7 @@ public class TrackerListController {
 	public void deleteObserver(Observer o) {
 		redundancyManager.addObserver(o);
 	}
-	
+
 	public List<ActiveTracker> getActiveTrackers() {
 		return globalManager.getActiveTrackers();
 	}

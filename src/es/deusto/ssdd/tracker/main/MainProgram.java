@@ -19,31 +19,36 @@ import es.deusto.ssdd.tracker.view.TrackerListView;
 
 public class MainProgram {
 
-	public static void main ( String [] args )  {
-		
+	public static void main(String[] args) {
+
 		GlobalManager globalManager = GlobalManager.getInstance();
-		
+
 		RedundancyManager redundancyManager = new RedundancyManager();
-		TrackerListController trackerListController = new TrackerListController( redundancyManager );
-		TrackerListView trackerListView = new TrackerListView(trackerListController);
-		
+		TrackerListController trackerListController = new TrackerListController(
+				redundancyManager);
+		TrackerListView trackerListView = new TrackerListView(
+				trackerListController);
+
 		UDPManager udpManager = new UDPManager();
-		ConfigurationController configurationController = new ConfigurationController(udpManager, redundancyManager );
-		ConfigurationView configurationView = new ConfigurationView(configurationController);
-		
+		ConfigurationController configurationController = new ConfigurationController(
+				udpManager, redundancyManager);
+		ConfigurationView configurationView = new ConfigurationView(
+				configurationController);
+
 		DataManager dataManager = new DataManager();
-		PeerListController peerListController = new PeerListController( dataManager );
+		PeerListController peerListController = new PeerListController(
+				dataManager);
 		PeerListView peerListView = new PeerListView(peerListController);
-	
+
 		globalManager.setRedundancyManager(redundancyManager);
 		globalManager.setUdpManager(udpManager);
-		
-		Map<String,JPanel> panels = new HashMap<String,JPanel>();
-		panels.put ("Configuration" , configurationView );
+
+		Map<String, JPanel> panels = new HashMap<String, JPanel>();
+		panels.put("Configuration", configurationView);
 		panels.put("Trackers List", trackerListView);
 		panels.put("Peers List", peerListView);
-		
-		MainView mainWindow = new MainView ( panels );
+
+		MainView mainWindow = new MainView(panels);
 		mainWindow.setConfigurationController(configurationController);
 		mainWindow.setVisible(true);
 	}

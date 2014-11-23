@@ -15,7 +15,7 @@ import javax.swing.table.DefaultTableModel;
 import es.deusto.ssdd.tracker.controller.TrackerListController;
 import es.deusto.ssdd.tracker.vo.ActiveTracker;
 
-public class TrackerListView extends JPanel implements Observer,ActionListener{
+public class TrackerListView extends JPanel implements Observer, ActionListener {
 	/**
 	 * 
 	 */
@@ -23,75 +23,75 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 	private TrackerListController controller;
 	private JTable table;
 	private MyBooleanModel model;
-	private Object [][] rows;
-	private String[] columnNames = {"Tracker ID", "Active", "Last Keep Alive","Master"};
+	private Object[][] rows;
+	private String[] columnNames = { "Tracker ID", "Active", "Last Keep Alive",
+			"Master" };
 
-	public TrackerListView ( TrackerListController trackerListController )
-	{
+	public TrackerListView(TrackerListController trackerListController) {
 		controller = trackerListController;
 		controller.addObserver(this);
 		createTable();
 	}
-	
+
 	@Override
 	public void update(Observable o, Object arg) {
-		if ( arg.equals("NewActiveTracker") || arg.equals("DeleteActiveTracker") || arg.equals("EditActiveTracker") || arg.equals("DisconnectTracker") )
-		{
+		if (arg.equals("NewActiveTracker") || arg.equals("DeleteActiveTracker")
+				|| arg.equals("EditActiveTracker")
+				|| arg.equals("DisconnectTracker")) {
 			updateTable();
 		}
 	}
-	
+
 	private synchronized void updateTable() {
-		
-			generateTrackersData();
-			model.setRowCount(0);
-			for ( int i = 0; i < rows.length ; i++) 
-			{
-				model.addRow(rows[i]);
-			}
-			//model.setDataVector(rows, columnNames);
-			model.fireTableDataChanged();
-			configureSizesOfTable(table);
-			//table.repaint();
-	
+
+		generateTrackersData();
+		model.setRowCount(0);
+		for (int i = 0; i < rows.length; i++) {
+			model.addRow(rows[i]);
+		}
+		// model.setDataVector(rows, columnNames);
+		model.fireTableDataChanged();
+		configureSizesOfTable(table);
+		// table.repaint();
+
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		
+
 	}
-	
-	public void createTable(){
-		
+
+	public void createTable() {
+
 		generateTrackersData();
-		model=new MyBooleanModel();
+		model = new MyBooleanModel();
 		model.setColumnIdentifiers(columnNames);
 		model.setDataVector(rows, columnNames);
-		table=new JTable(model);
+		table = new JTable(model);
 		configureSizesOfTable(table);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		JScrollPane scrollPane=new JScrollPane(table);
-		scrollPane.setPreferredSize(new Dimension(500,225));
+		JScrollPane scrollPane = new JScrollPane(table);
+		scrollPane.setPreferredSize(new Dimension(500, 225));
 		this.add(scrollPane);
 	}
-	
-	public void configureSizesOfTable( JTable table ){
+
+	public void configureSizesOfTable(JTable table) {
 		table.getColumnModel().getColumn(0).setPreferredWidth(100);
 		table.getColumnModel().getColumn(1).setPreferredWidth(100);
 		table.getColumnModel().getColumn(2).setPreferredWidth(200);
 		table.getColumnModel().getColumn(3).setPreferredWidth(80);
 	}
-	
+
 	public void generateTrackersData() {
 		List<ActiveTracker> listActiveTrackers = controller.getActiveTrackers();
-		System.out.println("Lista Active Trackers actual " + listActiveTrackers.toString());
-		rows=new Object[listActiveTrackers.size()][];
-		Object []rowData;
+		System.out.println("Lista Active Trackers actual "
+				+ listActiveTrackers.toString());
+		rows = new Object[listActiveTrackers.size()][];
+		Object[] rowData;
 		ActiveTracker tracker;
-		for ( int i=0; i < listActiveTrackers.size(); i++) {
+		for (int i = 0; i < listActiveTrackers.size(); i++) {
 			tracker = listActiveTrackers.get(i);
-			if ( tracker != null )
-			{
+			if (tracker != null) {
 				rowData = new Object[ActiveTracker.numColumns];
 				rowData[0] = tracker.getId();
 				rowData[1] = tracker.isActive();
@@ -104,26 +104,27 @@ public class TrackerListView extends JPanel implements Observer,ActionListener{
 
 }
 
-class MyBooleanModel extends DefaultTableModel{
+class MyBooleanModel extends DefaultTableModel {
 
 	private static final long serialVersionUID = 1L;
 
-	public boolean isCellEditable(int row,int column){
+	public boolean isCellEditable(int row, int column) {
 		return false;
 	}
+
 	public Class<?> getColumnClass(int column) {
-    	switch (column) {
-	        case 0:
-	            return String.class;
-	        case 1:
-	            return String.class;
-	        case 2:
-	            return String.class;
-	        case 3:
-	            return Boolean.class;
-	        default:
-	            return String.class;
-    	}
-    }
-		
+		switch (column) {
+		case 0:
+			return String.class;
+		case 1:
+			return String.class;
+		case 2:
+			return String.class;
+		case 3:
+			return Boolean.class;
+		default:
+			return String.class;
+		}
+	}
+
 }

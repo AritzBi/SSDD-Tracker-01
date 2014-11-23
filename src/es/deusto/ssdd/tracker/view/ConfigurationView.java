@@ -201,8 +201,8 @@ public class ConfigurationView extends JPanel implements Observer,
 			btnStart.setVisible(true);
 			btnStop.setVisible(false);
 		}
-		
-		else if ( e.getSource().equals(btnForceError)) {
+
+		else if (e.getSource().equals(btnForceError)) {
 			controller.disconnect();
 			btnForceError.setEnabled(false);
 			btnStart.setVisible(true);
@@ -212,9 +212,8 @@ public class ConfigurationView extends JPanel implements Observer,
 
 	@Override
 	public void update(Observable o, Object arg) {
-		if ( arg.equals("NewIdTracker") )
-		{
-			//Update the value of the id of the tracker
+		if (arg.equals("NewIdTracker")) {
+			// Update the value of the id of the tracker
 			spinnerId.setValue(controller.getTracker().getId());
 		}
 	}

@@ -11,32 +11,31 @@ public class GlobalManager {
 
 	private Tracker tracker;
 	private static GlobalManager instance;
-	
+
 	private RedundancyManager redundancyManager;
 	private UDPManager udpManager;
 	private TopicManager topicManager;
 	private QueueManager queueManager;
-	
+
 	private GlobalManager() {
 		tracker = new Tracker();
-		
+
 	}
-	
+
 	/**
 	 * Method used to start a Thread for Redundancy Manager and UDP Manager
 	 */
-	public void start() 
-	{
+	public void start() {
 		topicManager = TopicManager.getInstance();
 		queueManager = QueueManager.getInstance();
-		
+
 		new Thread(redundancyManager).start();
 		new Thread(udpManager).start();
 	}
 
 	/**
-	 * Method used to get a instance of the object
-	 * Constructor is set as private
+	 * Method used to get a instance of the object Constructor is set as private
+	 * 
 	 * @return
 	 */
 	public static GlobalManager getInstance() {
@@ -53,22 +52,22 @@ public class GlobalManager {
 	public void setTracker(Tracker tracker) {
 		this.tracker = tracker;
 	}
-	
+
 	/**
-	 * Method used to connect a new tracker with the ip, port and id and start the associated threads
+	 * Method used to connect a new tracker with the ip, port and id and start
+	 * the associated threads
+	 * 
 	 * @param ip
 	 * @param port
 	 * @param portForPeers
 	 * @param id
 	 */
-	public void connect ( String ipAddress, int port , int portForPeers, String id )
-	{
-		if ( id != null && !id.equals("") )
-		{
+	public void connect(String ipAddress, int port, int portForPeers, String id) {
+		if (id != null && !id.equals("")) {
 			redundancyManager.setStopListeningPackets(false);
 			redundancyManager.setStopThreadKeepAlive(false);
 			redundancyManager.setStopThreadCheckerKeepAlive(false);
-			
+
 			udpManager.setStopListeningPackets(false);
 			udpManager.setStopThreadAnnounceTests(false);
 		}
@@ -79,12 +78,11 @@ public class GlobalManager {
 		tracker.setMaster(false);
 		start();
 	}
-	
+
 	/**
 	 * Method used to disconnect the tracker
 	 */
-	public void disconnect () 
-	{
+	public void disconnect() {
 		redundancyManager.setStopListeningPackets(true);
 		redundancyManager.setStopThreadKeepAlive(true);
 		redundancyManager.setStopThreadCheckerKeepAlive(true);
@@ -93,33 +91,27 @@ public class GlobalManager {
 		udpManager.setStopThreadAnnounceTests(true);
 		getTracker().getTrackersActivos().clear();
 		redundancyManager.notifyObservers("DisconnectTracker");
-		
+
 		topicManager.close();
 		queueManager.close();
-		
 
-		
 	}
-	
-	public void closeWindow()
-	{
-		if ( queueManager != null )
+
+	public void closeWindow() {
+		if (queueManager != null)
 			queueManager.closeWindow();
 	}
-	
-	public List<ActiveTracker> getActiveTrackers()
-	{
-		if ( getTracker().getTrackersActivos() != null )
-		{
+
+	public List<ActiveTracker> getActiveTrackers() {
+		if (getTracker().getTrackersActivos() != null) {
 			List<ActiveTracker> listActiveTrackers = new ArrayList<ActiveTracker>();
-			Collection<ActiveTracker> activeTrackers = getTracker().getTrackersActivos().values();
-		    if ( activeTrackers != null )
-		    {
-		    	listActiveTrackers.addAll(activeTrackers);
-		    }
-		    return listActiveTrackers;
-		}
-		else
+			Collection<ActiveTracker> activeTrackers = getTracker()
+					.getTrackersActivos().values();
+			if (activeTrackers != null) {
+				listActiveTrackers.addAll(activeTrackers);
+			}
+			return listActiveTrackers;
+		} else
 			return new ArrayList<ActiveTracker>();
 	}
 
@@ -138,9 +130,8 @@ public class GlobalManager {
 	public void setUdpManager(UDPManager udpManager) {
 		this.udpManager = udpManager;
 	}
-	
-	public static void main ( String [] args )
-	{
+
+	public static void main(String[] args) {
 		GlobalManager globalManager = new GlobalManager();
 		globalManager.start();
 		TopicManager topicManager = TopicManager.getInstance();

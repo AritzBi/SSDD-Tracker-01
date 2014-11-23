@@ -14,7 +14,7 @@ public class MainView extends JFrame {
 
 	private static final long serialVersionUID = -5839974224728234589L;
 	private ConfigurationController configurationController;
-	
+
 	private Map<String, JPanel> panels;
 
 	public MainView(Map<String, JPanel> panels) {
@@ -25,11 +25,9 @@ public class MainView extends JFrame {
 
 		/*** SPECIFY : TABS ***/
 		JTabbedPane tabbedPane = new JTabbedPane();
-		if (panels != null && panels.size() > 0) 
-		{
+		if (panels != null && panels.size() > 0) {
 			paintPanels(tabbedPane);
-			if (tabbedPane.getComponents().length > 0) 
-			{
+			if (tabbedPane.getComponents().length > 0) {
 				add(tabbedPane);
 			}
 		}

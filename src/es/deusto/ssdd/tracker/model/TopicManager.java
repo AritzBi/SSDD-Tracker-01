@@ -330,7 +330,7 @@ public class TopicManager {
 							+ e.getMessage());
 		}
 	}
-	
+
 	public void subscribeTopicCorrectIdMessages(
 			RedundancyManager redundancyManager) {
 		try {

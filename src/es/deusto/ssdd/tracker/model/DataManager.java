@@ -6,23 +6,19 @@ import java.util.List;
 import java.util.Observer;
 
 import es.deusto.ssdd.tracker.vo.Peer;
-//TODO  store JSON information
-//TODO JSON dump
-//TODO Save peer
-//TODO 
+
 @SuppressWarnings("unused")
 public class DataManager implements Runnable {
 
 	private List<Observer> observers;
 
-	
 	private Connection connection;
 	private static DataManager instance;
 
 	public DataManager() {
 		observers = new ArrayList<Observer>();
 	}
-	
+
 	/*** OBSERVABLE PATTERN IMPLEMENTACION ***/
 	public void addObserver(Observer o) {
 		if (o != null && !this.observers.contains(o)) {
@@ -33,7 +29,7 @@ public class DataManager implements Runnable {
 	public void deleteObserver(Observer o) {
 		this.observers.remove(o);
 	}
-	
+
 	private void notifyObservers(Object param) {
 		for (Observer observer : this.observers) {
 			if (observer != null) {
@@ -43,8 +39,8 @@ public class DataManager implements Runnable {
 	}
 
 	/*** [END] OBSERVABLE PATTERN IMPLEMENTACION ***/
-	
-	public void connect( ) {
+
+	public void connect() {
 
 	}
 
@@ -52,11 +48,11 @@ public class DataManager implements Runnable {
 
 	}
 
-	public void insertNewPeer( Peer peer ) {
+	public void insertNewPeer(Peer peer) {
 
 	}
 
-	public void insertNewTorrent( String infoHash ) {
+	public void insertNewTorrent(String infoHash) {
 
 	}
 

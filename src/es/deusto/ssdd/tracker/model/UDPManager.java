@@ -23,7 +23,6 @@ public class UDPManager implements Runnable {
 	private InetAddress inetAddress;
 	private boolean stopListeningPackets = false;
 	private boolean stopThreadAnnounceTests = false;
-	
 
 	public UDPManager() {
 		observers = new ArrayList<Observer>();
@@ -66,8 +65,8 @@ public class UDPManager implements Runnable {
 				if (isConnectRequestMessage(packet)) {
 					// New thread to send a response
 				} else if (isAnnounceRequestMessage(packet)) {
-						topicManager.publishReadyToStoreMessage();
-					
+					topicManager.publishReadyToStoreMessage();
+
 				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received message: " + messageReceived);
@@ -117,22 +116,19 @@ public class UDPManager implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}/**
-
-	private void sendReadyToStoreMessage() {
-		String message = generateReadyToStoreMessage();
-		byte[] messageBytes = message.getBytes();
-		DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
-				messageBytes.length, inetAddress, globalManager.getTracker()
-						.getPort());
-		writeSocket(datagramPacket);
 	}
 
-	private String generateReadyToStoreMessage() {
-		return globalManager.getTracker().getId() + ":"
-				+ READY_TO_STORE_MESSAGE + ":";
-	}
-	**/
+	/**
+	 * private void sendReadyToStoreMessage() { String message =
+	 * generateReadyToStoreMessage(); byte[] messageBytes = message.getBytes();
+	 * DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
+	 * messageBytes.length, inetAddress, globalManager.getTracker() .getPort());
+	 * writeSocket(datagramPacket); }
+	 * 
+	 * private String generateReadyToStoreMessage() { return
+	 * globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE + ":";
+	 * }
+	 **/
 	/**
 	 * Method used to know if the received UDP packet is a connect request
 	 * message
@@ -155,19 +151,6 @@ public class UDPManager implements Runnable {
 		String[] message = new String(packet.getData()).split(":");
 		return message[0].equals("ANNOUNCE");
 	}
-
-	/**
-	 * Method used to write over the socket
-	 * 
-	 * @param datagramPacket
-	 */
-//	private synchronized void writeSocket(DatagramPacket datagramPacket) {
-//		try {
-//			socket.send(datagramPacket);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//	}
 
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
 
@@ -227,39 +210,42 @@ public class UDPManager implements Runnable {
 	private Tracker getTracker() {
 		return globalManager.getTracker();
 	}
+
 	private void autoSetNetworkInterface(MulticastSocket vSocket) {
 		try {
-			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+			Enumeration<NetworkInterface> interfaces = NetworkInterface
+					.getNetworkInterfaces();
 			Enumeration<InetAddress> addresses;
 			InetAddress inetAddress;
 			NetworkInterface interfaceAux;
 			boolean interfaceSelected = false;
-			
-			//Iterate over all network interfaces
+
+			// Iterate over all network interfaces
 			while (interfaces.hasMoreElements() && !interfaceSelected) {
 				interfaceAux = interfaces.nextElement();
-				
-				//Check wether the interface is up
-				if (interfaceAux.isUp()) {					
+
+				// Check wether the interface is up
+				if (interfaceAux.isUp()) {
 					addresses = interfaceAux.getInetAddresses();
-					
+
 					while (addresses.hasMoreElements()) {
 						inetAddress = addresses.nextElement();
-						
-						//Check that the InetAddres is no IPv6
-						if (!(inetAddress instanceof Inet6Address)) {						
-							vSocket.setNetworkInterface(interfaceAux);						
+
+						// Check that the InetAddres is no IPv6
+						if (!(inetAddress instanceof Inet6Address)) {
+							vSocket.setNetworkInterface(interfaceAux);
 							interfaceSelected = true;
-							
-							System.out.println("- Selected network interface: " + interfaceAux + " - " + inetAddress);
-							
+
+							System.out.println("- Selected network interface: "
+									+ interfaceAux + " - " + inetAddress);
+
 							break;
 						}
 					}
 				}
 			}
 		} catch (Exception ex) {
-			
+
 		}
 	}
 

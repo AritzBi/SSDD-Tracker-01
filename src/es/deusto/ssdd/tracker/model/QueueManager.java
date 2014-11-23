@@ -80,7 +80,7 @@ public class QueueManager {
 	public void receiveMessagesForMySpecificId(
 			RedundancyManager redundancyManager) {
 		try {
-			if (queueManager != null ) {
+			if (queueManager != null) {
 				queueReceiver = queueSession.createReceiver(
 						queueTrackersManagement, "DestinationId = '"
 								+ getTracker().getId() + "'");
@@ -94,16 +94,16 @@ public class QueueManager {
 	}
 
 	public void sendBackUpMessage(String destinationId) {
-		if ( queueManager != null )
-		{
+		if (queueManager != null) {
 			File file = new File("db/info_" + getTracker().getId() + ".db");
 			byte[] bytes = null;
 			FileInputStream fis = null;
 			try {
 				fis = new FileInputStream(file);
 			} catch (FileNotFoundException e) {
-				System.err.println("# File " + "db/info_" + getTracker().getId()
-						+ ".db" + " Not Found " + e.getMessage());
+				System.err.println("# File " + "db/info_"
+						+ getTracker().getId() + ".db" + " Not Found "
+						+ e.getMessage());
 			}
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			byte[] buf = new byte[1024];
@@ -131,7 +131,8 @@ public class QueueManager {
 
 				// Send the Messages
 				queueSender.send(mapMessage);
-				System.out.println("- MapMessage sent to the Queue! " +  mapMessage);
+				System.out.println("- MapMessage sent to the Queue! "
+						+ mapMessage);
 			} catch (JMSException e) {
 				System.err.println("# JMS Exception Error (sendBackUpMessage) "
 						+ e.getMessage());

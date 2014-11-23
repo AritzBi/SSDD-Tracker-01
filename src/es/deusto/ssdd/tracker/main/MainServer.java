@@ -7,7 +7,7 @@ public class MainServer {
 	public static void main(String[] args) {
 		GlobalManager globalManager = GlobalManager.getInstance();
 		globalManager.start();
-		
+
 	}
 
 }

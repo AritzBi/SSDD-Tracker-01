@@ -6,8 +6,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -37,8 +35,8 @@ public class RedundancyManager implements Runnable,MessageListener {
 	private TopicManager topicManager;
 	private QueueManager queueManager;
 
-	private MulticastSocket socket;
-	private InetAddress inetAddress;
+	//private MulticastSocket socket;
+	//private InetAddress inetAddress;
 	private boolean stopListeningPackets = false;
 	private boolean stopThreadKeepAlive = false;
 	private boolean stopThreadCheckerKeepAlive = false;
@@ -71,6 +69,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 		topicManager.subscribeTopicConfirmToStoreMessages(this);
 		topicManager.subscribeTopicReadyToStoreMessages(this);
 		topicManager.subscribeTopicIncorrectIdMessages(this);
+		topicManager.subscribeTopicCorrectIdMessages(this);
 		
 		//createSocket();
 		generateThreadToSendKeepAliveMessages();
@@ -416,8 +415,9 @@ public class RedundancyManager implements Runnable,MessageListener {
 						if ( !id.equals(getTracker().getId()) )
 						{
 							System.out.println("ENVIAMOS BACKUP MESSAGE");
+							topicManager.publishCorrectIdMessage(id);
 							queueManager.sendBackUpMessage( id );
-							queueManager.sendCorrectIdMessage(id);	
+								
 						}
 					
 					}

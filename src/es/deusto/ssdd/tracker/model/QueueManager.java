@@ -80,11 +80,10 @@ public class QueueManager {
 	public void receiveMessagesForMySpecificId(
 			RedundancyManager redundancyManager) {
 		try {
-			if (queueManager != null) {
+			if (queueManager != null ) {
 				queueReceiver = queueSession.createReceiver(
 						queueTrackersManagement, "DestinationId = '"
 								+ getTracker().getId() + "'");
-
 				queueReceiver.setMessageListener(redundancyManager);
 			}
 		} catch (JMSException e) {
@@ -135,28 +134,6 @@ public class QueueManager {
 				System.out.println("- MapMessage sent to the Queue! " +  mapMessage);
 			} catch (JMSException e) {
 				System.err.println("# JMS Exception Error (sendBackUpMessage) "
-						+ e.getMessage());
-			}
-		}
-	}
-
-	public void sendCorrectIdMessage(String destinationId) {
-		if ( queueManager != null )
-		{
-			MapMessage mapMessage;
-			try {
-				mapMessage = queueSession.createMapMessage();
-				// Message Properties
-				mapMessage.setStringProperty("TypeMessage",
-						Constants.TYPE_CORRECT_ID_MESSAGE);
-				mapMessage.setStringProperty("DestinationId", destinationId);
-				// Message Body
-				mapMessage.setString("Id", destinationId);
-
-				// Send the Messages
-				queueSender.send(mapMessage);
-			} catch (JMSException e) {
-				System.err.println("# JMS Exception Error (sendCorrectIdMessage) "
 						+ e.getMessage());
 			}
 		}

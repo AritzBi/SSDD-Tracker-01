@@ -34,7 +34,6 @@ public class MainView extends JFrame {
 
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
-				configurationController.closeWindow();
 				System.exit(0);
 			}
 		});

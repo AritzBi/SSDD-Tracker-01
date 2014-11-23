@@ -86,7 +86,7 @@ public class GlobalManager {
 		redundancyManager.setStopListeningPackets(true);
 		redundancyManager.setStopThreadKeepAlive(true);
 		redundancyManager.setStopThreadCheckerKeepAlive(true);
-		redundancyManager.setWaitingToHaveID(false);
+		redundancyManager.setWaitingToHaveID(true);
 		udpManager.setStopListeningPackets(true);
 		udpManager.setStopThreadAnnounceTests(true);
 		getTracker().getTrackersActivos().clear();
@@ -95,11 +95,6 @@ public class GlobalManager {
 		topicManager.close();
 		queueManager.close();
 
-	}
-
-	public void closeWindow() {
-		if (queueManager != null)
-			queueManager.closeWindow();
 	}
 
 	public List<ActiveTracker> getActiveTrackers() {
@@ -130,16 +125,5 @@ public class GlobalManager {
 	public void setUdpManager(UDPManager udpManager) {
 		this.udpManager = udpManager;
 	}
-
-	public static void main(String[] args) {
-		GlobalManager globalManager = new GlobalManager();
-		globalManager.start();
-		TopicManager topicManager = TopicManager.getInstance();
-		topicManager.publishKeepAliveMessage();
-		globalManager.disconnect();
-		globalManager.start();
-		topicManager = TopicManager.getInstance();
-		topicManager.publishKeepAliveMessage();
-		globalManager.disconnect();
-	}
+	
 }

@@ -162,10 +162,6 @@ public class QueueManager {
 		}
 	}
 
-	public void closeWindow() {
-
-	}
-
 	private Tracker getTracker() {
 		return globalManager.getTracker();
 	}

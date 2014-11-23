@@ -238,7 +238,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 	
 	private void generateDatabaseForPeersAndTorrents ( Object... data ) {
 		byte [] bytesOfDbFile = (byte[]) data[0];
-		String newFileName = "src/info_" + getTracker().getId() + ".db";
+		String newFileName = "db/info_" + getTracker().getId() + ".db";
 		File fileDest = new File ( newFileName );
 		FileOutputStream file = null;
 		try {
@@ -261,7 +261,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 	
 //	private void generateDatabaseForPeersAndTorrents ( DatagramPacket packet )
 //	{
-//		System.out.println("Coming a backup message... ¿Is for me? ");
+//		System.out.println("Coming a backup message... ï¿½Is for me? ");
 //		String [] partsMessage = new String(packet.getData()).split("%:%");
 //		String idMessage = partsMessage[0];
 //		String inicioOFin = partsMessage[1];
@@ -541,7 +541,7 @@ public class RedundancyManager implements Runnable,MessageListener {
         	System.err.println("** IO EX: Error reading the file " + e.getMessage() );
         }
 		String mensaje = Base64.encodeBase64String(bytes);
-        File newFile = new File ( "src/info_" + getTracker().getId() + ".db" );
+        File newFile = new File ( "db/info_" + getTracker().getId() + ".db" );
         long lengthFile = newFile.length();
         FileOutputStream fileOutputStream = null;
         try {

@@ -2,9 +2,12 @@ package es.deusto.ssdd.tracker.model;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Observer;
 
@@ -43,6 +46,7 @@ public class UDPManager implements Runnable {
 					.getPortForPeers());
 			inetAddress = InetAddress.getByName(globalManager.getTracker()
 					.getIpAddress());
+			autoSetNetworkInterface(socket);
 			socket.joinGroup(inetAddress);
 		} catch (IOException e) {
 			System.out.println("Error creating socket " + e.getMessage());
@@ -79,6 +83,7 @@ public class UDPManager implements Runnable {
 					globalManager.getTracker().getPort());
 			inetAddress = InetAddress.getByName(globalManager.getTracker()
 					.getIpAddress());
+			autoSetNetworkInterface(testSocket);
 			testSocket.joinGroup(inetAddress);
 			Thread threadSendAnnounceTests = new Thread() {
 				public void run() {
@@ -221,4 +226,40 @@ public class UDPManager implements Runnable {
 	private Tracker getTracker() {
 		return globalManager.getTracker();
 	}
+	private void autoSetNetworkInterface(MulticastSocket vSocket) {
+		try {
+			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+			Enumeration<InetAddress> addresses;
+			InetAddress inetAddress;
+			NetworkInterface interfaceAux;
+			boolean interfaceSelected = false;
+			
+			//Iterate over all network interfaces
+			while (interfaces.hasMoreElements() && !interfaceSelected) {
+				interfaceAux = interfaces.nextElement();
+				
+				//Check wether the interface is up
+				if (interfaceAux.isUp()) {					
+					addresses = interfaceAux.getInetAddresses();
+					
+					while (addresses.hasMoreElements()) {
+						inetAddress = addresses.nextElement();
+						
+						//Check that the InetAddres is no IPv6
+						if (!(inetAddress instanceof Inet6Address)) {						
+							vSocket.setNetworkInterface(interfaceAux);						
+							interfaceSelected = true;
+							
+							System.out.println("- Selected network interface: " + interfaceAux + " - " + inetAddress);
+							
+							break;
+						}
+					}
+				}
+			}
+		} catch (Exception ex) {
+			
+		}
+	}
+
 }

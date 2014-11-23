@@ -97,7 +97,7 @@ public class QueueManager {
 	public void sendBackUpMessage(String destinationId) {
 		if ( queueManager != null )
 		{
-			File file = new File("src/info_" + getTracker().getId() + ".db");
+			File file = new File("db/info_" + getTracker().getId() + ".db");
 			byte[] bytes = null;
 			FileInputStream fis = null;
 			try {

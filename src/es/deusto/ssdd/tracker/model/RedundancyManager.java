@@ -44,7 +44,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 	private boolean stopThreadCheckerKeepAlive = false;
 	private ConcurrentHashMap<String,Boolean> readyToStoreTrackers;
 	
-	private static String PATH_BASE_SQLITE_FILE = "src/base_database.db";
+	private static String PATH_BASE_SQLITE_FILE = "db/base_database.db";
 //	private static String INICIO = "I";
 //	private static String FIN = "F";
 //	private byte[] ficheroDB = null;
@@ -71,7 +71,6 @@ public class RedundancyManager implements Runnable,MessageListener {
 		topicManager.subscribeTopicConfirmToStoreMessages(this);
 		topicManager.subscribeTopicReadyToStoreMessages(this);
 		topicManager.subscribeTopicIncorrectIdMessages(this);
-		queueManager.receiveMessagesForMySpecificId(this);
 		
 		createSocket();
 		generateThreadToSendKeepAliveMessages();
@@ -345,6 +344,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 		if(originId.equals(getTracker().getId())&&waitingToHaveID)
 		{
 			waitingToHaveID = false;
+			queueManager.receiveMessagesForMySpecificId(this);
 		}
 			
 		
@@ -358,6 +358,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 			getTracker().setId(candidateId);
 			notifyObservers(new String ("NewIdTracker") );
 			waitingToHaveID = false;
+			queueManager.receiveMessagesForMySpecificId(this);
 		}
 			
 	}
@@ -379,7 +380,19 @@ public class RedundancyManager implements Runnable,MessageListener {
 				}else if(id.equals( getTracker().getId())  && !sentKeepAlive){
 					calculatePossibleId(id);
 				}
-				if ( getTracker().isMaster() == master ) {
+				
+				if ( getTracker().getId().equals(id) )
+				{
+					if ( getTracker().isMaster() == master ) {
+						ActiveTracker activeTracker = activeTrackers.get(id);
+						activeTracker.setLastKeepAlive(new Date());
+						activeTracker.setMaster(master);
+						notifyObservers( new String("EditActiveTracker") );
+					}
+				}
+				
+				if ( !getTracker().getId().equals(id) )
+				{
 					ActiveTracker activeTracker = activeTrackers.get(id);
 					activeTracker.setLastKeepAlive(new Date());
 					activeTracker.setMaster(master);
@@ -400,8 +413,13 @@ public class RedundancyManager implements Runnable,MessageListener {
 					}
 					else 
 					{
-						queueManager.sendBackUpMessage( id );
-						queueManager.sendCorrectIdMessage(id);
+						if ( !id.equals(getTracker().getId()) )
+						{
+							System.out.println("ENVIAMOS BACKUP MESSAGE");
+							queueManager.sendBackUpMessage( id );
+							queueManager.sendCorrectIdMessage(id);	
+						}
+					
 					}
 				}
 				
@@ -719,6 +737,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 			{
 				waitingToHaveID = false;
 				generateNewDatabaseForTracker();
+				queueManager.receiveMessagesForMySpecificId(this);
 			}
 				
 		}

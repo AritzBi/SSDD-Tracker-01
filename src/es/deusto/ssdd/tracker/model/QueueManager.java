@@ -103,7 +103,7 @@ public class QueueManager {
 			try {
 				fis = new FileInputStream(file);
 			} catch (FileNotFoundException e) {
-				System.err.println("# File " + "src/info_" + getTracker().getId()
+				System.err.println("# File " + "db/info_" + getTracker().getId()
 						+ ".db" + " Not Found " + e.getMessage());
 			}
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -132,6 +132,7 @@ public class QueueManager {
 
 				// Send the Messages
 				queueSender.send(mapMessage);
+				System.out.println("- MapMessage sent to the Queue! " +  mapMessage);
 			} catch (JMSException e) {
 				System.err.println("# JMS Exception Error (sendBackUpMessage) "
 						+ e.getMessage());

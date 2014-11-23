@@ -49,6 +49,7 @@ public class UDPManager implements Runnable {
 			autoSetNetworkInterface(socket);
 			socket.joinGroup(inetAddress);
 		} catch (IOException e) {
+			System.out.println("Error aqui");
 			System.out.println("Error creating socket " + e.getMessage());
 		}
 	}

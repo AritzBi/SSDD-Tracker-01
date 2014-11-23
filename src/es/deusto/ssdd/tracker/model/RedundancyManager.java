@@ -72,13 +72,13 @@ public class RedundancyManager implements Runnable,MessageListener {
 		topicManager.subscribeTopicReadyToStoreMessages(this);
 		topicManager.subscribeTopicIncorrectIdMessages(this);
 		
-		createSocket();
+		//createSocket();
 		generateThreadToSendKeepAliveMessages();
 		generateThreadToCheckActiveTrackers();
 		socketListeningPackets();
 	}
 
-	private void createSocket() {
+	/*private void createSocket() {
 		try {
 			socket = new MulticastSocket(globalManager.getTracker().getPort());
 			inetAddress = InetAddress.getByName(globalManager.getTracker()
@@ -87,7 +87,7 @@ public class RedundancyManager implements Runnable,MessageListener {
 		} catch (IOException e) {
 			System.out.println("** IO EXCEPTION: Error creating socket " + e.getMessage());
 		}
-	}
+	}*/
 
 	private void generateThreadToSendKeepAliveMessages() {
 		Thread threadSendKeepAliveMessages = new Thread() {
@@ -868,4 +868,13 @@ public class RedundancyManager implements Runnable,MessageListener {
 	public synchronized void setChoosingMaster(boolean choosingMaster) {
 		this.choosingMaster = choosingMaster;
 	}
+
+	public boolean isWaitingToHaveID() {
+		return waitingToHaveID;
+	}
+
+	public void setWaitingToHaveID(boolean waitingToHaveID) {
+		this.waitingToHaveID = waitingToHaveID;
+	}
+	
 }

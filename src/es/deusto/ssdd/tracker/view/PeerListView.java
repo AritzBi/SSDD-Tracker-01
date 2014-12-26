@@ -30,7 +30,7 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 
 	public PeerListView(PeerListController peerListController) {
 		controller = peerListController;
-		controller.addObserver(this);
+		//controller.addObserver(this);
 		createTable();
 	}
 

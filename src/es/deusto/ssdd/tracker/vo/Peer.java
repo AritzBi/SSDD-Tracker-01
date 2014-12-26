@@ -4,7 +4,9 @@ public class Peer {
 
 	private String id;
 	private String ipAddress;
-	private String port;
+	private int port;
+	private float downloaded;
+	private float uploaded;
 
 	public String getId() {
 		return id;
@@ -22,12 +24,28 @@ public class Peer {
 		this.ipAddress = ipAddress;
 	}
 
-	public String getPort() {
+	public int getPort() {
 		return port;
 	}
 
-	public void setPort(String port) {
+	public void setPort(int port) {
 		this.port = port;
 	}
 
+	public float getDownloaded() {
+		return downloaded;
+	}
+
+	public void setDownloaded(float downloaded) {
+		this.downloaded = downloaded;
+	}
+
+	public float getUploaded() {
+		return uploaded;
+	}
+
+	public void setUploaded(float uploaded) {
+		this.uploaded = uploaded;
+	}
+	
 }

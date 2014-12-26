@@ -1,22 +1,31 @@
 package es.deusto.ssdd.tracker.model;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Observer;
 
+import es.deusto.ssdd.tracker.udp.messages.AnnounceRequest;
+import es.deusto.ssdd.tracker.udp.messages.AnnounceResponse;
+import es.deusto.ssdd.tracker.udp.messages.BitTorrentUDPMessage.Action;
+import es.deusto.ssdd.tracker.udp.messages.ConnectRequest;
+import es.deusto.ssdd.tracker.udp.messages.ConnectResponse;
+import es.deusto.ssdd.tracker.vo.Peer;
 import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class UDPManager implements Runnable {
 
 	private List<Observer> observers;
 	private GlobalManager globalManager;
+	private DataManager dataManager;
 	private TopicManager topicManager;
 
 	private MulticastSocket socket;
@@ -27,6 +36,7 @@ public class UDPManager implements Runnable {
 	public UDPManager() {
 		observers = new ArrayList<Observer>();
 		globalManager = GlobalManager.getInstance();
+		dataManager = DataManager.getInstance();
 		topicManager = TopicManager.getInstance();
 	}
 
@@ -48,8 +58,7 @@ public class UDPManager implements Runnable {
 			autoSetNetworkInterface(socket);
 			socket.joinGroup(inetAddress);
 		} catch (IOException e) {
-			System.out.println("Error aqui");
-			System.out.println("Error creating socket " + e.getMessage());
+			System.out.println("# Error creating socket " + e.getMessage());
 		}
 	}
 
@@ -63,14 +72,70 @@ public class UDPManager implements Runnable {
 				socket.receive(packet);
 				System.out.println("Post socket");
 				if (isConnectRequestMessage(packet)) {
-					// New thread to send a response
+					processConnectRequestMessage(packet.getData(),
+							packet.getAddress(), packet.getPort());
 				} else if (isAnnounceRequestMessage(packet)) {
+					processAnnounceRequestMessage(packet.getData(), packet.getAddress(), packet.getPort());
 					topicManager.publishReadyToStoreMessage();
 
 				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received message: " + messageReceived);
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void processConnectRequestMessage(byte[] data, InetAddress address,
+			int port) {
+
+		ConnectRequest msgConnectRequest = ConnectRequest.parse(data);
+		// Make the corresponding validations
+		if (data.length >= 16
+				&& msgConnectRequest.getAction().equals(Action.CONNECT)) {
+			// store data over memory...
+			Peer peer = new Peer();
+			peer.setIpAddress(address.getHostAddress());
+			peer.setPort(port);
+			dataManager.addPeerToMemory(peer, msgConnectRequest.getConnectionId());
+			// Send the connect response message through a socket to the peer
+			ConnectResponse connectResponse = new ConnectResponse();
+			connectResponse
+					.setConnectionId(msgConnectRequest.getConnectionId());
+			connectResponse.setTransactionId(msgConnectRequest
+					.getTransactionId());
+
+			sendConnectResponseMessage(connectResponse, address, port);
+
+		}
+
+	}
+	
+	private void processAnnounceRequestMessage ( byte[] data, InetAddress address, int port )
+	{
+		AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(data);
+		//Corresponding validations...
+		if ( data.length >= 20 && msgAnnounceRequest.getAction().equals(Action.ANNOUNCE)) {
+			//store data over memory..
+			Peer peer = new Peer();
+			peer.setDownloaded(msgAnnounceRequest.getDownloaded());
+			peer.setUploaded(msgAnnounceRequest.getUploaded());
+			//TODO-AAEASH: ME HE QUEDADO AQUI!
+			AnnounceResponse announceResponse = new AnnounceResponse();
+		}
+	}
+
+	private void sendConnectResponseMessage(ConnectResponse connectResponse,
+			InetAddress address, int port) {
+		try {
+			Socket socket = new Socket(address, port);
+			DataOutputStream dataOutputStream = new DataOutputStream(
+					socket.getOutputStream());
+			dataOutputStream.write(connectResponse.getBytes());
+			dataOutputStream.flush();
+			dataOutputStream.close();
+			socket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -175,21 +240,6 @@ public class UDPManager implements Runnable {
 
 	/*** [END] OBSERVABLE PATTERN IMPLEMENTATION **/
 
-	// TODO
-	public void receiveConnectionRequest(DatagramPacket packet) {
-	}
-
-	// TODO
-	public void receiveAnnounceRequest(DatagramPacket packet) {
-	}
-
-	// TODO
-	public void sendConnectionResponse(DatagramPacket packet) {
-	}
-
-	// TODO
-	public void sendAnnounceResponse(DatagramPacket packet) {
-	}
 
 	public boolean isStopListeningPackets() {
 		return stopListeningPackets;

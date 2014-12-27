@@ -52,6 +52,9 @@ public class AnnounceResponse extends BitTorrentUDPMessage {
 			byteBuffer.putChar(inicio, (char) peerInfo.getPort());
 			inicio += 2;
 		}
+		
+		byteBuffer.flip();
+		
 		return byteBuffer.array();
 	}
 	

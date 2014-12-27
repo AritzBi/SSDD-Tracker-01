@@ -139,7 +139,7 @@ public class TopicManager {
 
 	}
 
-	public void publishReadyToStoreMessage() {
+	public void publishReadyToStoreMessage( long connectionId ) {
 		try {
 			if (instance != null) {
 				Topic topicReadyToStoreMessages = (Topic) ctx
@@ -157,7 +157,7 @@ public class TopicManager {
 
 				// Message Body
 				mapMessage.setString("Id", getTracker().getId());
-
+				mapMessage.setLong("ConnectionId", connectionId );
 				topicPublisher.publish(mapMessage);
 				System.out.println("- MapMessage sent to the Topic!");
 			}
@@ -172,7 +172,7 @@ public class TopicManager {
 		}
 	}
 
-	public void publishConfirmToStoreMessage() {
+	public void publishConfirmToStoreMessage( long connectionId ) {
 		try {
 			if (instance != null) {
 				Topic topicConfirmToStoreMessages = (Topic) ctx

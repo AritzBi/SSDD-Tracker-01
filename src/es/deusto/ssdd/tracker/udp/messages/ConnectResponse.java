@@ -26,9 +26,11 @@ public class ConnectResponse extends BitTorrentUDPRequestMessage {
 
 		byteBuffer.order(ByteOrder.BIG_ENDIAN);
 
-		byteBuffer.putLong(0, getAction().value() );
+		byteBuffer.putInt(0, getAction().value() );
 		byteBuffer.putInt(4, getTransactionId() );
 		byteBuffer.putLong(8, getConnectionId() );
+		
+		byteBuffer.flip();
 		
 		return byteBuffer.array();
 	}

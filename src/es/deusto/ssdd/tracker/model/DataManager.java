@@ -3,9 +3,13 @@ package es.deusto.ssdd.tracker.model;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
 import es.deusto.ssdd.tracker.vo.Peer;
 
 public class DataManager {
@@ -13,7 +17,7 @@ public class DataManager {
 	private Connection con;
 	private static DataManager instance;
 	
-	private Map<Long,Peer> peers;
+	public static Map<Long,Peer> peers;
 
 	public DataManager() {
 		peers = new HashMap<Long,Peer> ();
@@ -35,7 +39,7 @@ public class DataManager {
 			con = DriverManager.getConnection("jdbc:sqlite:" + dbname);
 			con.setAutoCommit(false);
 
-			System.out.println(" - Db connection was opened :)");
+			System.out.println(" - Db connection was opened");
 		} catch (Exception ex) {
 			System.err.println(" # Unable to create SQLiteDBManager: "
 					+ ex.getMessage());
@@ -48,7 +52,7 @@ public class DataManager {
 				&& peer.getIpAddress() != null
 				&& !peer.getIpAddress().isEmpty() ) {
 
-			String sqlString = "INSERT INTO STUDENT ('id', 'ip', 'port', 'downloaded','uploaded') VALUES (?,?,?,?,?)";
+			String sqlString = "INSERT INTO PEER ('id', 'ip', 'port', 'downloaded','uploaded') VALUES (?,?,?,?,?)";
 
 			try (PreparedStatement stmt = con.prepareStatement(sqlString)) {
 				stmt.setString(1, peer.getId());
@@ -74,6 +78,48 @@ public class DataManager {
 		}
 
 	}
+	
+	/**
+	 * Method to find the peers associated to one info_hash
+	 * @param infoHash
+	 * @return
+	 */
+	public List<PeerInfo> findPeersByInfoHash ( String infoHash, boolean seeders, boolean leechers )
+	{
+		List<PeerInfo> peers = null;
+		if ( infoHash != null && !infoHash.isEmpty() )
+		{
+			peers = new ArrayList<PeerInfo>();
+			
+			String sqlString = "Select ip,port from PEER,TORRENT,TORRENT_PEER where PEER.id = TORRENT_PEER.peer_id "
+					+ "and TORRENT.id = TORRENT_PEER.torrent_id and TORRENT.Info_Hash = '" + infoHash + "'";
+			
+			if ( seeders )
+			{
+				sqlString += " and TORRENT_PEER.state = '1' ";
+			}
+			if ( leechers )
+			{
+				sqlString += " and TORRENT_PEER.state = '0' ";
+			}
+			
+			try (PreparedStatement stmt = con.prepareStatement(sqlString)) {			
+				ResultSet rs = stmt.executeQuery();
+				
+				while(rs.next()) {
+				
+					PeerInfo peerInfo = new PeerInfo();
+					peerInfo.setIpAddress( rs.getInt("ip") );
+					peerInfo.setPort(rs.getInt("port"));
+					peers.add(peerInfo);
+				
+				}				
+			} catch (Exception ex) {
+				System.err.println("\n # Error loading data in the db: " + ex.getMessage());
+			}
+		}
+		return peers;
+	}
 
 	public void insertNewTorrent(String infoHash) {
 
@@ -89,8 +135,24 @@ public class DataManager {
 		}
 	}
 	
-	public void addPeerToMemory ( Peer peer , long connectionId )
+	public String addPeerToMemory ( Peer peer , long connectionId )
 	{
+		String response = "";
+		if ( peers.containsKey(connectionId ) )
+		{
+			response = "500 ALREADY EXISTS THIS CONNECTION ID";
+		}
+		else
+		{
+			peers.put(connectionId, peer );
+			response = "200 OK";
+		}
+		return response;
+	}
+	
+	public String updatePeerMemory ( Peer peer, long connectionId )
+	{
+		String response = "";
 		if ( peers.containsKey(connectionId ) )
 		{
 			Peer updtPeer = peers.get(connectionId);
@@ -99,10 +161,12 @@ public class DataManager {
 			updtPeer.setIpAddress(peer.getIpAddress());
 			updtPeer.setPort(peer.getPort());
 			updtPeer.setUploaded(peer.getUploaded());
+			response = "200 OK";
 		}
 		else
 		{
-			peers.put(connectionId, peer );
+			response = "500 ERROR";
 		}
+		return response;
 	}
 }

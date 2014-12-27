@@ -15,6 +15,8 @@ import java.util.Observer;
 
 import es.deusto.ssdd.tracker.udp.messages.AnnounceRequest;
 import es.deusto.ssdd.tracker.udp.messages.AnnounceResponse;
+import es.deusto.ssdd.tracker.udp.messages.BitTorrentUDPMessage;
+import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
 import es.deusto.ssdd.tracker.udp.messages.BitTorrentUDPMessage.Action;
 import es.deusto.ssdd.tracker.udp.messages.ConnectRequest;
 import es.deusto.ssdd.tracker.udp.messages.ConnectResponse;
@@ -72,12 +74,13 @@ public class UDPManager implements Runnable {
 				socket.receive(packet);
 				System.out.println("Post socket");
 				if (isConnectRequestMessage(packet)) {
-					processConnectRequestMessage(packet.getData(),
-							packet.getAddress(), packet.getPort());
+					processConnectRequestMessage(packet.getData(),packet.getAddress(), packet.getPort());
 				} else if (isAnnounceRequestMessage(packet)) {
-					processAnnounceRequestMessage(packet.getData(), packet.getAddress(), packet.getPort());
-					topicManager.publishReadyToStoreMessage();
-
+					if ( processAnnounceRequestMessage(packet.getData(), packet.getAddress(), packet.getPort() ) )
+					{
+						AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(packet.getData());
+						topicManager.publishReadyToStoreMessage( msgAnnounceRequest.getConnectionId() );
+					}
 				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received message: " + messageReceived);
@@ -92,47 +95,98 @@ public class UDPManager implements Runnable {
 
 		ConnectRequest msgConnectRequest = ConnectRequest.parse(data);
 		// Make the corresponding validations
-		if (data.length >= 16
-				&& msgConnectRequest.getAction().equals(Action.CONNECT)) {
+		if (data.length >= 16 && msgConnectRequest.getAction().equals(Action.CONNECT)) {
 			// store data over memory...
 			Peer peer = new Peer();
 			peer.setIpAddress(address.getHostAddress());
 			peer.setPort(port);
-			dataManager.addPeerToMemory(peer, msgConnectRequest.getConnectionId());
-			// Send the connect response message through a socket to the peer
-			ConnectResponse connectResponse = new ConnectResponse();
-			connectResponse
-					.setConnectionId(msgConnectRequest.getConnectionId());
-			connectResponse.setTransactionId(msgConnectRequest
-					.getTransactionId());
-
-			sendConnectResponseMessage(connectResponse, address, port);
-
+			String response = dataManager.addPeerToMemory(peer, msgConnectRequest.getConnectionId());
+			
+			if ( response.contains("OK") ) {
+				ConnectResponse connectResponse = new ConnectResponse();
+				
+				connectResponse.setConnectionId(msgConnectRequest.getConnectionId());
+				connectResponse.setTransactionId(msgConnectRequest.getTransactionId());
+				
+				sendResponseMessage(connectResponse, address, port);
+			}
+			else
+			{
+				sendErrorMessage ( response , msgConnectRequest.getTransactionId(), address, port);
+			}
 		}
 
 	}
 	
-	private void processAnnounceRequestMessage ( byte[] data, InetAddress address, int port )
+	/**
+	 * Method used to send an error message from the part of the tracker
+	 * @param message
+	 * @param transactionId
+	 * @param address (for the socket)
+	 * @param port (for the socket)
+	 */
+	private void sendErrorMessage ( String message, int transactionId, InetAddress address, int port )
 	{
+		es.deusto.ssdd.tracker.udp.messages.Error error = new es.deusto.ssdd.tracker.udp.messages.Error();
+		error.setMessage(message);
+		error.setTransactionId(transactionId);
+		sendResponseMessage(error, address, port);
+	}
+
+	private boolean processAnnounceRequestMessage(byte[] data,
+			InetAddress address, int port) {
 		AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(data);
-		//Corresponding validations...
-		if ( data.length >= 20 && msgAnnounceRequest.getAction().equals(Action.ANNOUNCE)) {
-			//store data over memory..
+		// Corresponding validations...
+		if (data.length >= 20 && msgAnnounceRequest.getAction().equals(Action.ANNOUNCE)) {
+			// store data over memory..
 			Peer peer = new Peer();
 			peer.setDownloaded(msgAnnounceRequest.getDownloaded());
 			peer.setUploaded(msgAnnounceRequest.getUploaded());
-			//TODO-AAEASH: ME HE QUEDADO AQUI!
-			AnnounceResponse announceResponse = new AnnounceResponse();
-		}
-	}
+			peer.setId(msgAnnounceRequest.getPeerId());
+			peer.setIpAddress(address.getHostAddress());
+			peer.setPort(port);
 
-	private void sendConnectResponseMessage(ConnectResponse connectResponse,
-			InetAddress address, int port) {
+			String response = dataManager.updatePeerMemory(peer, msgAnnounceRequest.getConnectionId() );
+			if ( response.contains("OK") )
+			{
+				sendAnnounceResponseMessage(msgAnnounceRequest, address, port );
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Method to send the announce response to the peers
+	 * It is send as peers both the seeders and the leechers associated to the info_hash
+	 * @param msgAnnounceRequest
+	 */
+	private void sendAnnounceResponseMessage ( AnnounceRequest msgAnnounceRequest, InetAddress address, int port )
+	{
+		List<PeerInfo> seeders = dataManager.findPeersByInfoHash(msgAnnounceRequest.getInfoHash(), true, false );
+		List<PeerInfo> leechers = dataManager.findPeersByInfoHash(msgAnnounceRequest.getInfoHash(), false, true);
+		
+		AnnounceResponse announceResponse = new AnnounceResponse();
+		announceResponse.setLeechers(leechers.size());
+		announceResponse.setSeeders(seeders.size());
+		seeders.addAll(leechers);
+		announceResponse.setPeers(seeders);
+		
+		sendResponseMessage(announceResponse, address, port);
+	}
+	
+	/**
+	 * Global method used for sending a BitTorrentUDPMessage to the socket
+	 * @param message
+	 * @param address
+	 * @param port
+	 */
+	private void sendResponseMessage ( BitTorrentUDPMessage message , InetAddress address , int port )
+	{
 		try {
 			Socket socket = new Socket(address, port);
-			DataOutputStream dataOutputStream = new DataOutputStream(
-					socket.getOutputStream());
-			dataOutputStream.write(connectResponse.getBytes());
+			DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+			dataOutputStream.write(message.getBytes());
 			dataOutputStream.flush();
 			dataOutputStream.close();
 			socket.close();
@@ -239,7 +293,6 @@ public class UDPManager implements Runnable {
 	}
 
 	/*** [END] OBSERVABLE PATTERN IMPLEMENTATION **/
-
 
 	public boolean isStopListeningPackets() {
 		return stopListeningPackets;

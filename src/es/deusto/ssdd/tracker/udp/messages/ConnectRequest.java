@@ -31,6 +31,8 @@ public class ConnectRequest extends BitTorrentUDPRequestMessage {
 		byteBuffer.putInt(8, getAction().value() );
 		byteBuffer.putInt(12, getTransactionId() );
 		
+		byteBuffer.flip();
+		
 		return byteBuffer.array();
 	}
 	

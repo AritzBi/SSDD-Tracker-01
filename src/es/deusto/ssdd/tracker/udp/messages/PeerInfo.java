@@ -1,5 +1,7 @@
 package es.deusto.ssdd.tracker.udp.messages;
 
+import java.util.regex.Pattern;
+
 /**
  * 
  * 	Size				Name
@@ -40,5 +42,18 @@ public class PeerInfo {
 		ipBuffer.append(address & 0xFF);
 		
 		return  ipBuffer.toString();
+	}
+	
+	public static int parseIp(String address) {
+	    int result = 0;
+
+	    // iterate over each octet
+	    for(String part : address.split(Pattern.quote("."))) {
+	        // shift the previously parsed bits over by 1 byte
+	        result = result << 8;
+	        // set the low order bits to the current octet
+	        result |= Integer.parseInt(part);
+	    }
+	    return result;
 	}
 }

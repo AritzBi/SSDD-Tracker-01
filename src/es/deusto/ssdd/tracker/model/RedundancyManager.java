@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.Observer;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,12 +27,14 @@ import org.apache.commons.codec.binary.Base64;
 
 import es.deusto.ssdd.tracker.vo.ActiveTracker;
 import es.deusto.ssdd.tracker.vo.Constants;
+import es.deusto.ssdd.tracker.vo.Peer;
 import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class RedundancyManager implements Runnable, MessageListener {
 
 	private List<Observer> observers;
 	private GlobalManager globalManager;
+	private DataManager dataManager;
 	private TopicManager topicManager;
 	private QueueManager queueManager;
 
@@ -51,6 +54,7 @@ public class RedundancyManager implements Runnable, MessageListener {
 		readyToStoreTrackers = new ConcurrentHashMap<String, Boolean>();
 
 		globalManager = GlobalManager.getInstance();
+		dataManager = DataManager.getInstance();
 		topicManager = TopicManager.getInstance();
 		queueManager = QueueManager.getInstance();
 	}
@@ -216,14 +220,20 @@ public class RedundancyManager implements Runnable, MessageListener {
 		}
 	}
 
-	private void storeTemporalData() {
-		// TODO: When we handle peers also
-		System.out.println("STORING...");
+	private void storeTemporalData(Object... data ) {
+		long connectionId = (long) data[0];
+		
+		Map<Long,Peer> peers = DataManager.peers;
+		
+		Peer peerToStore = peers.get(connectionId);
+		dataManager.insertNewPeer(peerToStore);
 	}
 
 	private void checkIfAllAreReadyToStore(Object... data) {
 		int num = getTracker().getTrackersActivos().size();
 		String id = (String) data[0];
+		long connectionId = (long) data[1];
+		
 		readyToStoreTrackers.put(id, true);
 		int numReady = 0;
 		for (Boolean bool : readyToStoreTrackers.values()) {
@@ -235,7 +245,7 @@ public class RedundancyManager implements Runnable, MessageListener {
 			readyToStoreTrackers.clear();
 			System.out.println("Method checkIfAllAreReadyToStore: "
 					+ "publishConfirmToStoreMessage()");
-			topicManager.publishConfirmToStoreMessage();
+			topicManager.publishConfirmToStoreMessage( connectionId );
 		}
 	}
 

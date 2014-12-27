@@ -8,4 +8,5 @@ public class Constants {
 	public static String TYPE_ERROR_ID_MESSAGE = "IncorrectId";
 	public static String TYPE_CORRECT_ID_MESSAGE = "CorrectId";
 	public static String TYPE_BACKUP_MESSAGE = "BackUp";
+	
 }

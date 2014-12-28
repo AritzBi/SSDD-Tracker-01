@@ -46,7 +46,7 @@ public class UDPManager implements Runnable {
 	public void run() {
 		topicManager = TopicManager.getInstance();
 		createSocket();
-		generateAnnounceTests();
+		//generateAnnounceTests();
 		socketListeningPackets();
 
 	}
@@ -195,7 +195,7 @@ public class UDPManager implements Runnable {
 		}
 	}
 
-	private void generateAnnounceTests() {
+	/**private void generateAnnounceTests() {
 		try {
 
 			final MulticastSocket testSocket = new MulticastSocket(
@@ -222,7 +222,7 @@ public class UDPManager implements Runnable {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-	}
+	}**/
 
 	private void sendTestAnnouceRequest(MulticastSocket testSocket) {
 		String message = "ANNOUNCE:";

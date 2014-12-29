@@ -19,7 +19,7 @@ public class DataManager {
 	
 	public static Map<Long,Peer> peers;
 
-	public DataManager() {
+	private DataManager() {
 		peers = new HashMap<Long,Peer> ();
 	}
 

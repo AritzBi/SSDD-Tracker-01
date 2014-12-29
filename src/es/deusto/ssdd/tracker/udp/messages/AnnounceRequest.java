@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
 
+import es.deusto.ssdd.tracker.metainfo.handler.MetainfoHandler;
+
 /**
  *
  * Offset  Size    			Name    			Value
@@ -113,8 +115,9 @@ public class AnnounceRequest extends BitTorrentUDPRequestMessage {
 		announceRequest.setAction( Action.valueOf(bufferReceive.getInt(8) ) );
 		announceRequest.setTransactionId(bufferReceive.getInt(12));
 		byte [] infoHash = new byte[20];
-		bufferReceive.get(infoHash,16,36);
-		announceRequest.setInfoHash( infoHash.toString() ); 
+		bufferReceive.position(16);
+		bufferReceive.get(infoHash);
+		announceRequest.setInfoHash( MetainfoHandler.toHexString(infoHash ) ); 
 		byte [] peerId = new byte[20];
 		bufferReceive.position(36);
 		bufferReceive.get(peerId);

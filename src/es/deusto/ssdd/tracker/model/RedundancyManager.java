@@ -157,7 +157,7 @@ public class RedundancyManager implements Runnable, MessageListener {
 						}
 					} else if (typeMessage
 							.equals(Constants.TYPE_CONFIRM_TO_STORE_MESSAGE)) {
-						storeTemporalData();
+						storeTemporalData( data.toArray() );
 					} else if (typeMessage
 							.equals(Constants.TYPE_ERROR_ID_MESSAGE)) {
 						checkErrorIDMessage(data.toArray());
@@ -218,6 +218,8 @@ public class RedundancyManager implements Runnable, MessageListener {
 			System.err.println(" ** IO EXCEPTION: Error writing the file "
 					+ newFileName + " " + e.getMessage());
 		}
+		
+		dataManager.connectDB("db/info_" + getTracker().getId() + ".db");
 	}
 
 	private void storeTemporalData(Object... data ) {
@@ -231,8 +233,8 @@ public class RedundancyManager implements Runnable, MessageListener {
 
 	private void checkIfAllAreReadyToStore(Object... data) {
 		int num = getTracker().getTrackersActivos().size();
-		String id = (String) data[0];
-		long connectionId = (long) data[1];
+		long connectionId = (long) data[0];
+		String id = (String) data[1];
 		
 		readyToStoreTrackers.put(id, true);
 		int numReady = 0;
@@ -415,6 +417,8 @@ public class RedundancyManager implements Runnable, MessageListener {
 			System.err.println("** IO EX: Error writing new file "
 					+ e.getMessage());
 		}
+		
+		dataManager.connectDB("db/info_" + getTracker().getId() + ".db");
 
 	}
 

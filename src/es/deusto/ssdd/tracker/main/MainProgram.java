@@ -35,7 +35,7 @@ public class MainProgram {
 		ConfigurationView configurationView = new ConfigurationView(
 				configurationController);
 
-		DataManager dataManager = new DataManager();
+		DataManager dataManager = DataManager.getInstance();
 		PeerListController peerListController = new PeerListController(
 				dataManager);
 		PeerListView peerListView = new PeerListView(peerListController);

@@ -1,13 +1,11 @@
 package es.deusto.ssdd.tracker.model;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -16,10 +14,10 @@ import java.util.Observer;
 import es.deusto.ssdd.tracker.udp.messages.AnnounceRequest;
 import es.deusto.ssdd.tracker.udp.messages.AnnounceResponse;
 import es.deusto.ssdd.tracker.udp.messages.BitTorrentUDPMessage;
-import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
 import es.deusto.ssdd.tracker.udp.messages.BitTorrentUDPMessage.Action;
 import es.deusto.ssdd.tracker.udp.messages.ConnectRequest;
 import es.deusto.ssdd.tracker.udp.messages.ConnectResponse;
+import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
 import es.deusto.ssdd.tracker.vo.Peer;
 import es.deusto.ssdd.tracker.vo.Tracker;
 
@@ -94,26 +92,24 @@ public class UDPManager implements Runnable {
 			int port) {
 
 		ConnectRequest msgConnectRequest = ConnectRequest.parse(data);
-		// Make the corresponding validations
-		if (data.length >= 16 && msgConnectRequest.getAction().equals(Action.CONNECT)) {
-			// store data over memory...
-			Peer peer = new Peer();
-			peer.setIpAddress(address.getHostAddress());
-			peer.setPort(port);
-			String response = dataManager.addPeerToMemory(peer, msgConnectRequest.getConnectionId());
+		
+		// store data over memory...
+		Peer peer = new Peer();
+		peer.setIpAddress(address.getHostAddress());
+		peer.setPort(port);
+		String response = dataManager.addPeerToMemory(peer, msgConnectRequest.getConnectionId());
+		
+		if ( response.contains("OK") ) {
+			ConnectResponse connectResponse = new ConnectResponse();
 			
-			if ( response.contains("OK") ) {
-				ConnectResponse connectResponse = new ConnectResponse();
-				
-				connectResponse.setConnectionId(msgConnectRequest.getConnectionId());
-				connectResponse.setTransactionId(msgConnectRequest.getTransactionId());
-				
-				sendResponseMessage(connectResponse, address, port);
-			}
-			else
-			{
-				sendErrorMessage ( response , msgConnectRequest.getTransactionId(), address, port);
-			}
+			connectResponse.setConnectionId(msgConnectRequest.getConnectionId());
+			connectResponse.setTransactionId(msgConnectRequest.getTransactionId());
+			
+			sendResponseMessage(connectResponse, address, port);
+		}
+		else
+		{
+			sendErrorMessage ( response , msgConnectRequest.getTransactionId(), address, port);
 		}
 
 	}
@@ -136,23 +132,21 @@ public class UDPManager implements Runnable {
 	private boolean processAnnounceRequestMessage(byte[] data,
 			InetAddress address, int port) {
 		AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(data);
-		// Corresponding validations...
-		if (data.length >= 20 && msgAnnounceRequest.getAction().equals(Action.ANNOUNCE)) {
-			// store data over memory..
-			Peer peer = new Peer();
-			peer.setDownloaded(msgAnnounceRequest.getDownloaded());
-			peer.setUploaded(msgAnnounceRequest.getUploaded());
-			peer.setId(msgAnnounceRequest.getPeerId());
-			peer.setIpAddress(address.getHostAddress());
-			peer.setPort(port);
+		// store data over memory..
+		Peer peer = new Peer();
+		peer.setDownloaded(msgAnnounceRequest.getDownloaded());
+		peer.setUploaded(msgAnnounceRequest.getUploaded());
+		peer.setId(msgAnnounceRequest.getPeerId());
+		peer.setIpAddress(address.getHostAddress());
+		peer.setPort(port);
 
-			String response = dataManager.updatePeerMemory(peer, msgAnnounceRequest.getConnectionId() );
-			if ( response.contains("OK") )
-			{
-				sendAnnounceResponseMessage(msgAnnounceRequest, address, port );
-				return true;
-			}
+		String response = dataManager.updatePeerMemory(peer, msgAnnounceRequest.getConnectionId() );
+		if ( response.contains("OK") )
+		{
+			sendAnnounceResponseMessage(msgAnnounceRequest, address, port );
+			return true;
 		}
+		
 		return false;
 	}
 	
@@ -184,12 +178,8 @@ public class UDPManager implements Runnable {
 	private void sendResponseMessage ( BitTorrentUDPMessage message , InetAddress address , int port )
 	{
 		try {
-			Socket socket = new Socket(address, port);
-			DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-			dataOutputStream.write(message.getBytes());
-			dataOutputStream.flush();
-			dataOutputStream.close();
-			socket.close();
+			DatagramPacket reply = new DatagramPacket(message.getBytes(), message.getBytes().length, address, port);
+			socket.send(reply);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -222,7 +212,7 @@ public class UDPManager implements Runnable {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-	}**/
+	}
 
 	private void sendTestAnnouceRequest(MulticastSocket testSocket) {
 		String message = "ANNOUNCE:";
@@ -237,7 +227,6 @@ public class UDPManager implements Runnable {
 		}
 	}
 
-	/**
 	 * private void sendReadyToStoreMessage() { String message =
 	 * generateReadyToStoreMessage(); byte[] messageBytes = message.getBytes();
 	 * DatagramPacket datagramPacket = new DatagramPacket(messageBytes,
@@ -248,6 +237,7 @@ public class UDPManager implements Runnable {
 	 * globalManager.getTracker().getId() + ":" + READY_TO_STORE_MESSAGE + ":";
 	 * }
 	 **/
+	
 	/**
 	 * Method used to know if the received UDP packet is a connect request
 	 * message
@@ -256,7 +246,23 @@ public class UDPManager implements Runnable {
 	 * @return
 	 */
 	private boolean isConnectRequestMessage(DatagramPacket packet) {
-		return false;
+		boolean isConnectRequest = true;
+		
+		if ( packet.getLength() != 16 )
+		{
+			isConnectRequest = false;
+		}
+		if ( isConnectRequest )
+		{
+			ConnectRequest msgConnectRequest = ConnectRequest.parse(packet.getData());
+			
+			if ( !msgConnectRequest.getAction().equals(Action.CONNECT) )
+			{
+				isConnectRequest = false;
+			}
+		}
+		
+		return isConnectRequest;
 	}
 
 	/**
@@ -267,8 +273,21 @@ public class UDPManager implements Runnable {
 	 * @return
 	 */
 	private boolean isAnnounceRequestMessage(DatagramPacket packet) {
-		String[] message = new String(packet.getData()).split(":");
-		return message[0].equals("ANNOUNCE");
+		boolean isAnnounceRequest = true;
+		
+		if ( packet.getLength() != 98 )
+		{
+			isAnnounceRequest = false;
+		}
+		if ( isAnnounceRequest ) {
+			AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(packet.getData());
+			if ( !msgAnnounceRequest.getAction().equals(Action.ANNOUNCE) )
+			{
+				isAnnounceRequest = false;
+			}
+		}
+
+		return isAnnounceRequest;
 	}
 
 	/*** OBSERVABLE PATTERN IMPLEMENTATION **/
@@ -308,10 +327,6 @@ public class UDPManager implements Runnable {
 
 	public void setStopThreadAnnounceTests(boolean stopThreadAnnounceTests) {
 		this.stopThreadAnnounceTests = stopThreadAnnounceTests;
-	}
-
-	private Tracker getTracker() {
-		return globalManager.getTracker();
 	}
 
 	private void autoSetNetworkInterface(MulticastSocket vSocket) {

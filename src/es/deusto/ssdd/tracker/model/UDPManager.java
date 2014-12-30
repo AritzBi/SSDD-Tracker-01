@@ -138,6 +138,7 @@ public class UDPManager implements Runnable {
 		peer.setIpAddress(address.getHostAddress());
 		peer.setPort(port);
 
+		
 		String response = dataManager.updatePeerMemory(peer, msgAnnounceRequest.getConnectionId() );
 		if ( response.contains("OK") )
 		{

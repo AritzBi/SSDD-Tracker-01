@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
 
+import es.deusto.ssdd.tracker.vo.Utils;
 import es.deusto.ssdd.tracker.metainfo.handler.MetainfoHandler;
 
 /**
@@ -90,7 +91,7 @@ public class AnnounceRequest extends BitTorrentUDPRequestMessage {
 		byteBuffer.putInt(8, getAction().value());
 		byteBuffer.putInt(12,getTransactionId());
 		byteBuffer.position(16);
-		byteBuffer.put(infoHash.getBytes());
+		byteBuffer.put(Utils.getInfoHash(infoHash));
 		byteBuffer.position(36);
 		byteBuffer.put(peerId.getBytes());
 		byteBuffer.putLong(56, downloaded);
@@ -121,7 +122,7 @@ public class AnnounceRequest extends BitTorrentUDPRequestMessage {
 		byte [] peerId = new byte[20];
 		bufferReceive.position(36);
 		bufferReceive.get(peerId);
-		announceRequest.setPeerId( createPeerId() );
+		announceRequest.setPeerId( new String( peerId ) );
 		announceRequest.setDownloaded(bufferReceive.getLong(56));
 		announceRequest.setLeft(bufferReceive.getLong(64));
 		announceRequest.setUploaded(bufferReceive.getLong(72));
@@ -130,6 +131,7 @@ public class AnnounceRequest extends BitTorrentUDPRequestMessage {
 		PeerInfo peerInfo = new PeerInfo();
 		peerInfo.setIpAddress(bufferReceive.getInt(84));
 		peerInfo.setPort(bufferReceive.getChar(96));
+		announceRequest.setPeerInfo(peerInfo);
 		
 		announceRequest.setKey(bufferReceive.getInt(88));
 		announceRequest.setNumWant(bufferReceive.getInt(92));

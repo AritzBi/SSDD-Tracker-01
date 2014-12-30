@@ -64,6 +64,7 @@ public class DataManager {
 				if (stmt.executeUpdate() == 1) {
 					System.out.println("\n - A new peer was inserted. :)");
 					con.commit();
+				
 				} else {
 					System.err.println("\n - A new peer wasn't inserted. :(");
 					con.rollback();
@@ -109,7 +110,7 @@ public class DataManager {
 				while(rs.next()) {
 				
 					PeerInfo peerInfo = new PeerInfo();
-					peerInfo.setIpAddress( rs.getInt("ip") );
+					peerInfo.setIpAddress( PeerInfo.parseIp( rs.getString("ip") ) );
 					peerInfo.setPort(rs.getInt("port"));
 					peers.add(peerInfo);
 				

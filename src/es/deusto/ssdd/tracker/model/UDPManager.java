@@ -19,7 +19,6 @@ import es.deusto.ssdd.tracker.udp.messages.ConnectRequest;
 import es.deusto.ssdd.tracker.udp.messages.ConnectResponse;
 import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
 import es.deusto.ssdd.tracker.vo.Peer;
-import es.deusto.ssdd.tracker.vo.Tracker;
 
 public class UDPManager implements Runnable {
 
@@ -44,7 +43,6 @@ public class UDPManager implements Runnable {
 	public void run() {
 		topicManager = TopicManager.getInstance();
 		createSocket();
-		//generateAnnounceTests();
 		socketListeningPackets();
 
 	}
@@ -74,7 +72,7 @@ public class UDPManager implements Runnable {
 				if (isConnectRequestMessage(packet)) {
 					processConnectRequestMessage(packet.getData(),packet.getAddress(), packet.getPort());
 				} else if (isAnnounceRequestMessage(packet)) {
-					if ( processAnnounceRequestMessage(packet.getData(), packet.getAddress(), packet.getPort() ) )
+					if ( processAnnounceRequestMessageAndSendResponseMessage(packet.getData(), packet.getAddress(), packet.getPort() ) )
 					{
 						AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(packet.getData());
 						topicManager.publishReadyToStoreMessage( msgAnnounceRequest.getConnectionId() );
@@ -129,7 +127,7 @@ public class UDPManager implements Runnable {
 		sendResponseMessage(error, address, port);
 	}
 
-	private boolean processAnnounceRequestMessage(byte[] data,
+	private boolean processAnnounceRequestMessageAndSendResponseMessage(byte[] data,
 			InetAddress address, int port) {
 		AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(data);
 		// store data over memory..
@@ -178,7 +176,8 @@ public class UDPManager implements Runnable {
 	private void sendResponseMessage ( BitTorrentUDPMessage message , InetAddress address , int port )
 	{
 		try {
-			DatagramPacket reply = new DatagramPacket(message.getBytes(), message.getBytes().length, address, port);
+			byte [] bytes = message.getBytes();
+			DatagramPacket reply = new DatagramPacket(bytes, bytes.length, address, port);
 			socket.send(reply);
 		} catch (IOException e) {
 			e.printStackTrace();

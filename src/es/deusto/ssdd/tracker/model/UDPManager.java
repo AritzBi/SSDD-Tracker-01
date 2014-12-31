@@ -82,7 +82,7 @@ public class UDPManager implements Runnable {
 					}
 				}
 				else if ( isScrapeRequestMessage(packet)) {
-					
+					processScrapeRequestMessageAndSendResponseMessage (packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
 				}
 				String messageReceived = new String(packet.getData());
 				System.out.println("Received message: " + messageReceived);
@@ -90,6 +90,11 @@ public class UDPManager implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void processScrapeRequestMessageAndSendResponseMessage ( byte[] data, int length, InetAddress address, int port )
+	{
+		ScrapeRequest msgScrapeRequest = ScrapeRequest.parse(Utils.parsearArrayBytes(data, length ) );
 	}
 
 	private void processConnectRequestMessageAndSendResponseMessage(byte[] data, InetAddress address,

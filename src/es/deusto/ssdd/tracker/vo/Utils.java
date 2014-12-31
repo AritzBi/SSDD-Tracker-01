@@ -1,8 +1,11 @@
 package es.deusto.ssdd.tracker.vo;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+
+import es.deusto.ssdd.tracker.metainfo.handler.MetainfoHandler;
 
 public class Utils {
 
@@ -23,5 +26,16 @@ public class Utils {
 		ByteBuffer.wrap(bytes);
 		return byteBuffer.array();
 	}
+
+	
+	public static void main ( String [] args )
+	{
+		String hex = "B415C913643E5FF49FE37D304BBB5E6E11AD5101";
+		BigInteger value = new BigInteger(hex, 16); 
+		System.out.println(MetainfoHandler.toHexString(value.toByteArray() ));
+		
+	}
+	
+
 	
 }

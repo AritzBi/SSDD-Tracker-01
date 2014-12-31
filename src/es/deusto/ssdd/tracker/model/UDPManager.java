@@ -119,7 +119,7 @@ public class UDPManager implements Runnable {
 			//Calculate an unique connection id number that identifies the peer
 			long connectionId = new Random().nextLong();
 			
-			response = dataManager.addPeerToMemory(peer, msgConnectRequest.getConnectionId());
+			response = dataManager.addPeerToMemory(peer, connectionId);
 			
 			if ( response.contains("OK") )
 			{

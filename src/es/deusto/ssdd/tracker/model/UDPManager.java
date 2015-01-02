@@ -8,6 +8,7 @@ import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Observer;
 import java.util.Random;
@@ -209,12 +210,43 @@ public class UDPManager implements Runnable {
 		
 		boolean infoHashExists=dataManager.existsInfoHashInMemory(msgAnnounceRequest.getInfoHash());
 		if(infoHashExists){
-			
-		}else{
+			List<PeerInfo>lLeechers=DataManager.leechers.get(msgAnnounceRequest.getInfoHash());
+			List<PeerInfo>lSeeders=DataManager.seeders.get(msgAnnounceRequest.getInfoHash());
+			boolean contains=false;
+			for(PeerInfo peerInfoI:lLeechers){
+				if(peerInfoI.compareTo(peerInfo)==0){
+					contains=true;
+					lLeechers.remove(peerInfoI);
+					break;
+				}
+			}
+			if(!contains){
+				for(PeerInfo peerInfoI:lSeeders){
+					if(peerInfoI.compareTo(peerInfo)==0){
+						contains=true;
+						lSeeders.remove(peerInfoI);
+						break;
+					}
+				}
+			}
+			PeerInfo peerInfoForMemory = new PeerInfo();
+			peerInfoForMemory.setIpAddress(PeerInfo.parseIp(peer.getIpAddress()));
+			peerInfoForMemory.setPort(peer.getPort());
 			if(msgAnnounceRequest.getEvent().equals(Event.COMPLETED)){
-				
+				DataManager.seeders.get(msgAnnounceRequest.getInfoHash()).add(peerInfoForMemory);
 			}else{
-				
+				DataManager.leechers.get(msgAnnounceRequest.getInfoHash()).add(peerInfoForMemory);
+			}	
+		}else{
+			List<PeerInfo>tmpList=new ArrayList<PeerInfo>();
+			PeerInfo peerInfoForMemory = new PeerInfo();
+			peerInfoForMemory.setIpAddress(PeerInfo.parseIp(peer.getIpAddress()));
+			peerInfoForMemory.setPort(peer.getPort());
+			tmpList.add(peerInfoForMemory);
+			if(msgAnnounceRequest.getEvent().equals(Event.COMPLETED)){
+				DataManager.seeders.put(msgAnnounceRequest.getInfoHash(), tmpList);
+			}else{
+				DataManager.leechers.put(msgAnnounceRequest.getInfoHash(), tmpList);
 			}	
 		}
 		

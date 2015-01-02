@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  *
  */
 
-public class PeerInfo {
+public class PeerInfo implements Comparable{
 	private int ipAddress;
 	private int port;
 	
@@ -61,4 +61,15 @@ public class PeerInfo {
 		int numero = PeerInfo.parseIp("127.0.0.1");
 		System.out.println(numero);
 	}
+
+	@Override
+	public int compareTo(Object o) {
+		PeerInfo peerinfo=(PeerInfo) o;
+		if(this.ipAddress==peerinfo.getIpAddress() && this.port==peerinfo.getPort()){
+			return 0;
+		}
+		return -1;
+	}
+	
+	
 }

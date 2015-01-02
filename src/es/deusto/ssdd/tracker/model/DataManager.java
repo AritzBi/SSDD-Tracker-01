@@ -18,9 +18,13 @@ public class DataManager {
 	private static DataManager instance;
 	
 	public static Map<Long,Peer> peers;
-
+	public static Map<String,List<PeerInfo>> seeders;
+	public static Map<String,List<PeerInfo>> leechers;
 	public DataManager() {
 		peers = new HashMap<Long,Peer> ();
+		seeders= new HashMap<String,List<PeerInfo>>();
+		leechers=new HashMap<String,List<PeerInfo>>();
+		initializeLists();
 	}
 
 	public static DataManager getInstance() {
@@ -78,7 +82,32 @@ public class DataManager {
 		}
 
 	}
-	
+	public void initializeLists(){
+		List<String>infoHashes=findAllInfoHashes();
+		for(String infohash: infoHashes){
+			List<PeerInfo>lSeeders=this.findPeersByInfoHash(infohash, true, false);
+			List<PeerInfo>lLeechers=this.findPeersByInfoHash(infohash, false, true);
+			seeders.put(infohash, lSeeders);
+			leechers.put(infohash, lLeechers);
+		}
+		
+	}
+	public List<String> findAllInfoHashes(){
+		String sqlString="Select info_hash from torrent";
+		List<String>infoHashes=new ArrayList<String>();
+		try (PreparedStatement stmt = con.prepareStatement(sqlString)) {			
+			ResultSet rs = stmt.executeQuery();
+			
+			while(rs.next()) {
+			
+				infoHashes.add(rs.getString(0));
+			
+			}				
+		} catch (Exception ex) {
+			System.err.println("\n # Error loading data in the db: " + ex.getMessage());
+		}
+		return infoHashes;
+	}
 	/**
 	 * Method to find the peers associated to one info_hash
 	 * @param infoHash

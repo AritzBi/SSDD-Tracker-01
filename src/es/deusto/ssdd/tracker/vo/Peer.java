@@ -7,6 +7,7 @@ public class Peer {
 	private int port;
 	private float downloaded;
 	private float uploaded;
+	private float left;
 
 	public String getId() {
 		return id;
@@ -46,6 +47,14 @@ public class Peer {
 
 	public void setUploaded(float uploaded) {
 		this.uploaded = uploaded;
+	}
+
+	public float getLeft() {
+		return left;
+	}
+
+	public void setLeft(float left) {
+		this.left = left;
 	}
 	
 }

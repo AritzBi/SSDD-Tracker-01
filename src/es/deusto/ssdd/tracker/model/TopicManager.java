@@ -190,9 +190,10 @@ public class TopicManager {
 
 				// Message Body
 				mapMessage.setString("Id", getTracker().getId());
-
+				mapMessage.setLong("ConnectionId", connectionId );
 				topicPublisher.publish(mapMessage);
 				System.out.println("- MapMessage sent to the Topic!");
+				
 			}
 
 		} catch (JMSException e) {

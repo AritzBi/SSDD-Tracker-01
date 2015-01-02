@@ -56,4 +56,9 @@ public class PeerInfo {
 	    }
 	    return result;
 	}
+	
+	public static void main ( String [] args ) {
+		int numero = PeerInfo.parseIp("127.0.0.1");
+		System.out.println(numero);
+	}
 }

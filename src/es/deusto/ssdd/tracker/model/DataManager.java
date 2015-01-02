@@ -20,7 +20,8 @@ public class DataManager {
 	public static Map<Long,Peer> peers;
 	public static Map<String,List<PeerInfo>> seeders;
 	public static Map<String,List<PeerInfo>> leechers;
-	public DataManager() {
+
+	private DataManager() {
 		peers = new HashMap<Long,Peer> ();
 		seeders= new HashMap<String,List<PeerInfo>>();
 		leechers=new HashMap<String,List<PeerInfo>>();
@@ -68,6 +69,7 @@ public class DataManager {
 				if (stmt.executeUpdate() == 1) {
 					System.out.println("\n - A new peer was inserted. :)");
 					con.commit();
+				
 				} else {
 					System.err.println("\n - A new peer wasn't inserted. :(");
 					con.rollback();
@@ -138,7 +140,7 @@ public class DataManager {
 				while(rs.next()) {
 				
 					PeerInfo peerInfo = new PeerInfo();
-					peerInfo.setIpAddress( rs.getInt("ip") );
+					peerInfo.setIpAddress( PeerInfo.parseIp( rs.getString("ip") ) );
 					peerInfo.setPort(rs.getInt("port"));
 					peers.add(peerInfo);
 				

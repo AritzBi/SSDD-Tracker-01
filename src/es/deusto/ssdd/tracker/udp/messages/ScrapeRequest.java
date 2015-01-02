@@ -3,7 +3,9 @@ package es.deusto.ssdd.tracker.udp.messages;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -18,11 +20,11 @@ import java.util.List;
 
 public class ScrapeRequest extends BitTorrentUDPRequestMessage {
 
-	private List<String> infoHashes;
+	private Map<String,byte[]> infoHashes;
 	
 	public ScrapeRequest() {
 		super(Action.SCRAPE);
-		this.infoHashes = new ArrayList<>();
+		infoHashes = new HashMap<String,byte[]>();
 	}
 	
 	@Override
@@ -37,10 +39,10 @@ public class ScrapeRequest extends BitTorrentUDPRequestMessage {
 		byteBuffer.putInt(8, getAction().value() );
 		byteBuffer.putInt(12, getTransactionId());
 		int inicio = 20;
-		for ( String infoHash : infoHashes )
+		for ( String infoHash : infoHashes.keySet() )
 		{
 			byteBuffer.position(inicio);
-			byteBuffer.put(infoHash.getBytes());
+			byteBuffer.put(infoHashes.get(infoHash));
 			inicio += 20;
 		}
 		
@@ -66,12 +68,12 @@ public class ScrapeRequest extends BitTorrentUDPRequestMessage {
 	}
 	
 	public List<String> getInfoHashes() {
-		return infoHashes;
+		return (List<String>) infoHashes.keySet();
 	}
 
-	public void addInfoHash(String infoHash) {
-		if (infoHash != null && !infoHash.trim().isEmpty() && !this.infoHashes.contains(infoHash)) {
-			this.infoHashes.add(infoHash);
+	public void addInfoHash(String infoHash, byte [] bytesInfoHash ) {
+		if (infoHash != null && !infoHash.trim().isEmpty() && !this.infoHashes.containsKey(infoHash)) {
+			infoHashes.put(infoHash, bytesInfoHash);
 		}
 	}
 }

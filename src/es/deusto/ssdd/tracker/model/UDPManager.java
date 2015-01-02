@@ -13,6 +13,7 @@ import java.util.Observer;
 import java.util.Random;
 
 import es.deusto.ssdd.tracker.udp.messages.AnnounceRequest;
+import es.deusto.ssdd.tracker.udp.messages.AnnounceRequest.Event;
 import es.deusto.ssdd.tracker.udp.messages.AnnounceResponse;
 import es.deusto.ssdd.tracker.udp.messages.BitTorrentUDPMessage;
 import es.deusto.ssdd.tracker.udp.messages.BitTorrentUDPMessage.Action;
@@ -177,6 +178,17 @@ public class UDPManager implements Runnable {
 		
 		peer.setPort(peerInfo.getPort());
 		response = dataManager.updatePeerMemory(peer, msgAnnounceRequest.getConnectionId() );
+		
+		boolean infoHashExists=dataManager.existsInfoHashInMemory(msgAnnounceRequest.getInfoHash());
+		if(infoHashExists){
+			
+		}else{
+			if(msgAnnounceRequest.getEvent().equals(Event.COMPLETED)){
+				
+			}else{
+				
+			}	
+		}
 		
 		if ( response != null && response.contains("OK") )
 		{

@@ -200,4 +200,11 @@ public class DataManager {
 		}
 		return response;
 	}
+	
+	public boolean existsInfoHashInMemory(String infohash){
+		if(seeders.containsKey(infohash)||leechers.containsKey(infohash)){
+			return true;
+		}
+		return false;
+	}
 }

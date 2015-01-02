@@ -232,6 +232,8 @@ public class UDPManager implements Runnable {
 			PeerInfo peerInfoForMemory = new PeerInfo();
 			peerInfoForMemory.setIpAddress(PeerInfo.parseIp(peer.getIpAddress()));
 			peerInfoForMemory.setPort(peer.getPort());
+			peerInfoForMemory.setId(peer.getId());
+			
 			if(msgAnnounceRequest.getEvent().equals(Event.COMPLETED)){
 				DataManager.seeders.get(msgAnnounceRequest.getInfoHash()).add(peerInfoForMemory);
 			}else{
@@ -242,6 +244,7 @@ public class UDPManager implements Runnable {
 			PeerInfo peerInfoForMemory = new PeerInfo();
 			peerInfoForMemory.setIpAddress(PeerInfo.parseIp(peer.getIpAddress()));
 			peerInfoForMemory.setPort(peer.getPort());
+			peerInfoForMemory.setId(peer.getId());
 			tmpList.add(peerInfoForMemory);
 			if(msgAnnounceRequest.getEvent().equals(Event.COMPLETED)){
 				DataManager.seeders.put(msgAnnounceRequest.getInfoHash(), tmpList);

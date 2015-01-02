@@ -153,8 +153,58 @@ public class DataManager {
 		return peers;
 	}
 
-	public void insertNewTorrent(String infoHash) {
+	public void insertNewTorrent(String infoHash, List<PeerInfo>seeders, List<PeerInfo>leechers) {
 
+			String sqlString = "INSERT INTO TORRENT ('info_hash') VALUES (?)";
+
+			try (PreparedStatement stmt = con.prepareStatement(sqlString)) {
+				stmt.setString(1, infoHash);
+
+				if (stmt.executeUpdate() == 1) {
+					System.out.println("\n - A new torrent was inserted. :)");
+					sqlString = "SELECT ID FROM TORRENT WHERE ID=?";
+					int torrentId=0;
+					try (PreparedStatement stmt3 = con.prepareStatement(sqlString)) {	
+						stmt3.setString(0, infoHash);
+						ResultSet rs = stmt3.executeQuery();
+						torrentId=rs.getInt("id");
+					} catch (Exception ex) {
+						System.err.println("\n # Error loading data in the db: " + ex.getMessage());
+					}	
+					sqlString="INSERT INTO TORRENT_PEER ('torrent_id','peer_id','state') VALUES(?,?,?)";
+					for(PeerInfo peerInfo:seeders){
+						try (PreparedStatement stmt2 = con.prepareStatement(sqlString)) {
+						stmt2.setInt(1,torrentId);
+						stmt2.setString(2, peerInfo.getId());
+						stmt2.setInt(3, 1);
+						stmt2.executeUpdate();
+						}catch(Exception e){
+							System.err.println("\n - Error inserting seeders:(");
+							e.printStackTrace();
+						}
+					}
+					for(PeerInfo peerInfo:leechers){
+						try (PreparedStatement stmt2 = con.prepareStatement(sqlString)) {
+							stmt2.setInt(1,torrentId);
+							stmt2.setString(2, peerInfo.getId());
+							stmt2.setInt(3, 1);
+							stmt2.executeUpdate();
+							}catch(Exception e){
+								System.err.println("\n - Error inserting leechers:(");
+								e.printStackTrace();
+							}
+					}
+					
+					con.commit();
+				
+				} else {
+					System.err.println("\n - A new torrent wasn't inserted. :(");
+					con.rollback();
+				}
+			} catch (Exception ex) {
+				System.err.println("\n # Error storing data in the db: "
+						+ ex.getMessage());
+			}
 	}
 
 	public void closeConnection() {
@@ -207,5 +257,20 @@ public class DataManager {
 			return true;
 		}
 		return false;
+	}
+	//TODO Pasarlo a un hilo
+	public void insertLeechersAndSeeders (){
+		String sqlString = "Delete from TORRENT_PEER ";
+		executeQuery(sqlString);
+		sqlString = "Delete from TORRENT ";
+		executeQuery(sqlString);
+	}
+	
+	public void executeQuery(String query){
+		try (PreparedStatement stmt = con.prepareStatement(query)) {			
+			stmt.executeQuery();	
+		} catch (Exception ex) {
+			System.err.println("\n # Error deleting data in the db: " + ex.getMessage());
+		}
 	}
 }

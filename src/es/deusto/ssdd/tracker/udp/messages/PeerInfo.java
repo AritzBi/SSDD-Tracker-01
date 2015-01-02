@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
  */
 
 public class PeerInfo implements Comparable{
+	private String id;
 	private int ipAddress;
 	private int port;
 	
@@ -28,6 +29,12 @@ public class PeerInfo implements Comparable{
 	
 	public void setPort(int port) {
 		this.port = port;
+	}
+	public String getId(){
+		return id;
+	}
+	public void setId(String id){
+		this.id=id;
 	}
 	
 	public static String toStringIpAddress(int address) {

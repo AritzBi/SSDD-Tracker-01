@@ -230,7 +230,7 @@ public class RedundancyManager implements Runnable, MessageListener {
 		Peer peerToStore = peers.get(connectionId);
 		dataManager.insertNewPeer(peerToStore);
 		//DataManager.peers.remove(connectionId);
-		//TODO-ARITZBILBAO
+		dataManager.insertLeechersAndSeeders();
 	}
 
 	private void checkIfAllAreReadyToStore(Object... data) {

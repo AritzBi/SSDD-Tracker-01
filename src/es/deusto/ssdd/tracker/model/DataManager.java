@@ -16,7 +16,6 @@ public class DataManager {
 
 	private Connection con;
 	private static DataManager instance;
-	
 	public static Map<Long,Peer> peers;
 	public static Map<String,List<PeerInfo>> seeders;
 	public static Map<String,List<PeerInfo>> leechers;
@@ -272,5 +271,19 @@ public class DataManager {
 		} catch (Exception ex) {
 			System.err.println("\n # Error deleting data in the db: " + ex.getMessage());
 		}
+	}
+	
+	public int numberOfTorrentInWhichIsSeeder(String id){
+		String sqlString="SELECT COUNT(TORRENT_ID) FROM TORRENT_PEER WHERE STATE='0' AND PEER_ID=?";
+		int number=0;
+		try (PreparedStatement stmt = con.prepareStatement(sqlString)) {	
+			stmt.setString(0, id);
+			ResultSet rs = stmt.executeQuery();
+			number=rs.getInt(0);
+			System.out.println(number);
+		} catch (Exception ex) {
+			System.err.println("\n # Error querying number of torrents in which the user is seeder:" + ex.getMessage());
+		}
+		return number;
 	}
 }

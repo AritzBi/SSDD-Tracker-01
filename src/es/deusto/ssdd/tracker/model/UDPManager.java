@@ -38,6 +38,8 @@ public class UDPManager implements Runnable {
 	private InetAddress inetAddress;
 	private boolean stopListeningPackets = false;
 	private boolean stopThreadAnnounceTests = false;
+	private static int maximumInterval=60; //Seconds
+	private static int minimumNumbersOfPeers=10; //Seconds
 
 	public UDPManager() {
 		observers = new ArrayList<Observer>();
@@ -317,8 +319,18 @@ public class UDPManager implements Runnable {
 	}
 	
 	private int calculateNumberPeersAllowedForPeer ( String peerId )
-	{
-		return 10;
+	{		
+		int numberOfPeers=minimumNumbersOfPeers;
+		int numberOfSeeding=DataManager.getInstance().numberOfTorrentInWhichIsSeeder(peerId);
+		if(numberOfSeeding ==0)
+			return minimumNumbersOfPeers;
+		else{
+			int ratio=numberOfSeeding/10;
+			for(int i=0;i<ratio;i++){
+				numberOfPeers=numberOfPeers+10;
+			}
+		}
+		return numberOfPeers;
 	}
 	
 	/**
@@ -327,8 +339,19 @@ public class UDPManager implements Runnable {
 	 * @return
 	 */
 	private int calculateIntervalForPeer ( String peerId )
-	{
-		return 10;
+	{	
+		Double interval=(double) maximumInterval;
+		int number=DataManager.getInstance().numberOfTorrentInWhichIsSeeder(peerId);
+		if(number ==0)
+			return maximumInterval;
+		else{
+			int ratio=number/10;
+			interval=(double) maximumInterval;
+			for(int i=0;i<ratio;i++){
+				interval=interval*0.25;
+			}
+		}
+		return interval.intValue();
 	}
 	
 	/**

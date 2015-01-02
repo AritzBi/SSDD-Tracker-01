@@ -87,8 +87,8 @@ public class DataManager {
 	public void initializeLists(){
 		List<String>infoHashes=findAllInfoHashes();
 		for(String infohash: infoHashes){
-			List<PeerInfo>lSeeders=this.findPeersByInfoHash(infohash, true, false);
-			List<PeerInfo>lLeechers=this.findPeersByInfoHash(infohash, false, true);
+			List<PeerInfo>lSeeders = findPeersByInfoHash(infohash, true, false);
+			List<PeerInfo>lLeechers = findPeersByInfoHash(infohash, false, true);
 			seeders.put(infohash, lSeeders);
 			leechers.put(infohash, lLeechers);
 		}

@@ -19,7 +19,9 @@ import es.deusto.ssdd.tracker.udp.messages.BitTorrentUDPMessage.Action;
 import es.deusto.ssdd.tracker.udp.messages.ConnectRequest;
 import es.deusto.ssdd.tracker.udp.messages.ConnectResponse;
 import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
+import es.deusto.ssdd.tracker.udp.messages.ScrapeInfo;
 import es.deusto.ssdd.tracker.udp.messages.ScrapeRequest;
+import es.deusto.ssdd.tracker.udp.messages.ScrapeResponse;
 import es.deusto.ssdd.tracker.vo.Peer;
 import es.deusto.ssdd.tracker.vo.Utils;
 
@@ -95,6 +97,32 @@ public class UDPManager implements Runnable {
 	private void processScrapeRequestMessageAndSendResponseMessage ( byte[] data, int length, InetAddress address, int port )
 	{
 		ScrapeRequest msgScrapeRequest = ScrapeRequest.parse(Utils.parsearArrayBytes(data, length ) );
+		
+		//The info hash that is to be scraped
+		
+		List<String> infoHashes = msgScrapeRequest.getInfoHashes();
+		
+		ScrapeResponse scrapeResponse = new ScrapeResponse();
+		scrapeResponse.setTransactionId(msgScrapeRequest.getTransactionId());
+		
+		ScrapeInfo scrapeInfo = null;
+		for ( String infoHash : infoHashes )
+		{
+			scrapeInfo = new ScrapeInfo();
+			List<PeerInfo> seeders = DataManager.seeders.get(infoHash);
+			List<PeerInfo> leechers = DataManager.leechers.get(infoHash);
+			
+			//TODO-AAESH: nos falta downloads del infohash
+			scrapeInfo.setCompleted(0);
+			
+			scrapeInfo.setLeechers(leechers.size());
+			scrapeInfo.setSeeders(seeders.size());
+			
+			scrapeResponse.addScrapeInfo(scrapeInfo);
+		}
+		
+		sendResponseMessage(scrapeResponse, address, port);
+		
 	}
 
 	private void processConnectRequestMessageAndSendResponseMessage(byte[] data, InetAddress address,

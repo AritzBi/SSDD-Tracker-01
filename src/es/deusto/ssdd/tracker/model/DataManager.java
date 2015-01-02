@@ -4,10 +4,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
 import es.deusto.ssdd.tracker.vo.Peer;
@@ -122,7 +125,7 @@ public class DataManager {
 		{
 			peers = new ArrayList<PeerInfo>();
 			
-			String sqlString = "Select ip,port from PEER,TORRENT,TORRENT_PEER where PEER.id = TORRENT_PEER.peer_id "
+			String sqlString = "Select ip,port,PEER.id from PEER,TORRENT,TORRENT_PEER where PEER.id = TORRENT_PEER.peer_id "
 					+ "and TORRENT.id = TORRENT_PEER.torrent_id and TORRENT.Info_Hash = '" + infoHash + "'";
 			
 			if ( seeders )
@@ -142,6 +145,7 @@ public class DataManager {
 					PeerInfo peerInfo = new PeerInfo();
 					peerInfo.setIpAddress( PeerInfo.parseIp( rs.getString("ip") ) );
 					peerInfo.setPort(rs.getInt("port"));
+					peerInfo.setId(rs.getString("id"));
 					peers.add(peerInfo);
 				
 				}				
@@ -152,58 +156,88 @@ public class DataManager {
 		return peers;
 	}
 
-	public void insertNewTorrent(String infoHash, List<PeerInfo>seeders, List<PeerInfo>leechers) {
-
-			String sqlString = "INSERT INTO TORRENT ('info_hash') VALUES (?)";
-
-			try (PreparedStatement stmt = con.prepareStatement(sqlString)) {
-				stmt.setString(1, infoHash);
-
-				if (stmt.executeUpdate() == 1) {
-					System.out.println("\n - A new torrent was inserted. :)");
-					sqlString = "SELECT ID FROM TORRENT WHERE ID=?";
-					int torrentId=0;
-					try (PreparedStatement stmt3 = con.prepareStatement(sqlString)) {	
-						stmt3.setString(0, infoHash);
-						ResultSet rs = stmt3.executeQuery();
-						torrentId=rs.getInt("id");
-					} catch (Exception ex) {
-						System.err.println("\n # Error loading data in the db: " + ex.getMessage());
-					}	
-					sqlString="INSERT INTO TORRENT_PEER ('torrent_id','peer_id','state') VALUES(?,?,?)";
-					for(PeerInfo peerInfo:seeders){
-						try (PreparedStatement stmt2 = con.prepareStatement(sqlString)) {
-						stmt2.setInt(1,torrentId);
-						stmt2.setString(2, peerInfo.getId());
-						stmt2.setInt(3, 1);
-						stmt2.executeUpdate();
-						}catch(Exception e){
-							System.err.println("\n - Error inserting seeders:(");
-							e.printStackTrace();
-						}
-					}
-					for(PeerInfo peerInfo:leechers){
-						try (PreparedStatement stmt2 = con.prepareStatement(sqlString)) {
-							stmt2.setInt(1,torrentId);
-							stmt2.setString(2, peerInfo.getId());
-							stmt2.setInt(3, 1);
-							stmt2.executeUpdate();
-							}catch(Exception e){
-								System.err.println("\n - Error inserting leechers:(");
-								e.printStackTrace();
-							}
-					}
-					
-					con.commit();
-				
-				} else {
-					System.err.println("\n - A new torrent wasn't inserted. :(");
-					con.rollback();
-				}
-			} catch (Exception ex) {
-				System.err.println("\n # Error storing data in the db: "
-						+ ex.getMessage());
+	public void insertNewTorrent() {
+		List<String> infohashes = new ArrayList<String>();
+		
+		for ( String infoHashInSet: seeders.keySet() )
+		{
+			if (seeders.get(infoHashInSet).size() > 0 )
+			{
+				infohashes.add(infoHashInSet);
 			}
+		}
+		for ( String infoHashInSet: leechers.keySet() )
+		{
+			if (leechers.get(infoHashInSet).size() > 0 )
+			{
+				infohashes.add(infoHashInSet);
+			}
+		}
+
+		List<String> insertedInfoHashes = new ArrayList<String>();
+		for(String infoHash:infohashes ){
+			String sqlString = null;
+			if ( !insertedInfoHashes.contains(infoHash) )
+			{
+				sqlString = "INSERT INTO TORRENT ('info_hash') VALUES (?)";
+				try (PreparedStatement stmt = con.prepareStatement(sqlString)) {
+					stmt.setString(1, infoHash);
+
+					if (stmt.executeUpdate() == 1) {
+						System.out.println("\n - A new torrent was inserted. :)");
+						sqlString = "SELECT ID FROM TORRENT WHERE info_hash=?";
+						int torrentId=0;
+						try (PreparedStatement stmt3 = con.prepareStatement(sqlString)) {	
+							stmt3.setString(1,infoHash);
+							ResultSet rs = stmt3.executeQuery();
+							torrentId=rs.getInt("id");
+						} catch (Exception ex) {
+							System.err.println("\n # Error loading data in the db: " + ex.getMessage());
+						}	
+						sqlString="INSERT INTO TORRENT_PEER ('torrent_id','peer_id','state') VALUES(?,?,?)";
+						if ( seeders.get(infoHash) != null )
+						{
+							for(PeerInfo peerInfo:seeders.get(infoHash)){
+								try (PreparedStatement stmt2 = con.prepareStatement(sqlString)) {
+								stmt2.setInt(1,torrentId);
+								stmt2.setString(2, peerInfo.getId());
+								stmt2.setInt(3, 1);
+								stmt2.executeUpdate();
+								}catch(Exception e){
+									System.err.println("\n - Error inserting seeders:(");
+									e.printStackTrace();
+								}
+							}
+						}
+						if ( leechers.get(infoHash) != null )
+						{
+							for(PeerInfo peerInfo:leechers.get(infoHash)){
+								try (PreparedStatement stmt2 = con.prepareStatement(sqlString)) {
+									stmt2.setInt(1,torrentId);
+									stmt2.setString(2, peerInfo.getId());
+									stmt2.setInt(3, 0);
+									stmt2.executeUpdate();
+									}catch(Exception e){
+										System.err.println("\n - Error inserting leechers:(");
+										e.printStackTrace();
+									}
+							}
+						}
+						con.commit();
+					
+					} else {
+						System.err.println("\n - A new torrent wasn't inserted. :(");
+						con.rollback();
+					}
+				} catch (Exception ex) {
+					System.err.println("\n # Error storing data in the db: "
+							+ ex.getMessage());
+				}
+			}
+		}
+			
+
+
 	}
 
 	public void closeConnection() {
@@ -263,24 +297,30 @@ public class DataManager {
 		executeQuery(sqlString);
 		sqlString = "Delete from TORRENT ";
 		executeQuery(sqlString);
+		try {
+			con.commit();
+			insertNewTorrent();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public void executeQuery(String query){
 		try (PreparedStatement stmt = con.prepareStatement(query)) {			
-			stmt.executeQuery();	
+			stmt.executeUpdate();	
 		} catch (Exception ex) {
 			System.err.println("\n # Error deleting data in the db: " + ex.getMessage());
 		}
 	}
 	
 	public int numberOfTorrentInWhichIsSeeder(String id){
-		String sqlString="SELECT COUNT(TORRENT_ID) FROM TORRENT_PEER WHERE STATE='0' AND PEER_ID=?";
+		String sqlString="SELECT COUNT(TORRENT_ID) FROM TORRENT_PEER WHERE STATE='1' AND PEER_ID=? ORDER BY TORRENT_ID";
 		int number=0;
 		try (PreparedStatement stmt = con.prepareStatement(sqlString)) {	
-			stmt.setString(0, id);
+			stmt.setString(1, id);
 			ResultSet rs = stmt.executeQuery();
-			number=rs.getInt(0);
-			System.out.println(number);
+			number=rs.getInt(1);
 		} catch (Exception ex) {
 			System.err.println("\n # Error querying number of torrents in which the user is seeder:" + ex.getMessage());
 		}

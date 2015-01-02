@@ -25,7 +25,7 @@ public class DataManager {
 		peers = new HashMap<Long,Peer> ();
 		seeders= new HashMap<String,List<PeerInfo>>();
 		leechers=new HashMap<String,List<PeerInfo>>();
-		initializeLists();
+		
 	}
 
 	public static DataManager getInstance() {
@@ -45,6 +45,7 @@ public class DataManager {
 			con.setAutoCommit(false);
 
 			System.out.println(" - Db connection was opened");
+			initializeLists();
 		} catch (Exception ex) {
 			System.err.println(" # Unable to create SQLiteDBManager: "
 					+ ex.getMessage());
@@ -102,7 +103,7 @@ public class DataManager {
 			
 			while(rs.next()) {
 			
-				infoHashes.add(rs.getString(0));
+				infoHashes.add(rs.getString("info_hash"));
 			
 			}				
 		} catch (Exception ex) {

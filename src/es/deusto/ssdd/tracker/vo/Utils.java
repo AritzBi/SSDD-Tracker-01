@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import es.deusto.ssdd.tracker.metainfo.handler.MetainfoHandler;
+import es.deusto.ssdd.tracker.udp.messages.ScrapeRequest;
+import es.deusto.ssdd.tracker.udp.messages.ScrapeResponse;
 
 public class Utils {
 

@@ -43,7 +43,9 @@ public class ScrapeResponse extends BitTorrentUDPMessage {
 			byteBuffer.putInt (inicio, scrapeInfo.getCompleted());
 			inicio += 4;
 			byteBuffer.putInt(inicio,scrapeInfo.getLeechers());
+			inicio += 4;
 		}
+		byteBuffer.flip();
 		
 		return byteBuffer.array();
 	}
@@ -54,7 +56,6 @@ public class ScrapeResponse extends BitTorrentUDPMessage {
 		scrapeResponse.setAction(Action.valueOf(bufferReceive.getInt(0)));
 		scrapeResponse.setTransactionId( bufferReceive.getInt(4));
 		
-		List<ScrapeInfo> scrapes = new ArrayList<ScrapeInfo>();
 		int inicio;
 		for ( inicio = 8; inicio < byteArray.length ; inicio += 12 )
 		{
@@ -65,7 +66,7 @@ public class ScrapeResponse extends BitTorrentUDPMessage {
 			scrapeInfo.setSeeders(seeders);
 			scrapeInfo.setCompleted(completed);
 			scrapeInfo.setLeechers(leechers);
-			scrapes.add(scrapeInfo);
+			scrapeResponse.addScrapeInfo(scrapeInfo);
 		}
 		
 		return scrapeResponse;

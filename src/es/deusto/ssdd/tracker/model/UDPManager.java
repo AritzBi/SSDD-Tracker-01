@@ -24,7 +24,6 @@ import es.deusto.ssdd.tracker.udp.messages.ScrapeInfo;
 import es.deusto.ssdd.tracker.udp.messages.ScrapeRequest;
 import es.deusto.ssdd.tracker.udp.messages.ScrapeResponse;
 import es.deusto.ssdd.tracker.vo.Peer;
-import es.deusto.ssdd.tracker.vo.Utils;
 
 public class UDPManager implements Runnable {
 
@@ -99,7 +98,7 @@ public class UDPManager implements Runnable {
 	
 	private void processScrapeRequestMessageAndSendResponseMessage ( byte[] data, int length, InetAddress address, int port )
 	{
-		ScrapeRequest msgScrapeRequest = ScrapeRequest.parse(Utils.parsearArrayBytes(data, length ) );
+		ScrapeRequest msgScrapeRequest = ScrapeRequest.parse( data );
 		
 		//The info hash that is to be scraped
 		
@@ -109,23 +108,23 @@ public class UDPManager implements Runnable {
 		scrapeResponse.setTransactionId(msgScrapeRequest.getTransactionId());
 		
 		ScrapeInfo scrapeInfo = null;
-		for ( String infoHash : infoHashes )
+		if ( infoHashes != null && infoHashes.size() > 0 )
 		{
-			scrapeInfo = new ScrapeInfo();
-			List<PeerInfo> seeders = DataManager.seeders.get(infoHash);
-			List<PeerInfo> leechers = DataManager.leechers.get(infoHash);
+			for ( String infoHash : infoHashes )
+			{
+				scrapeInfo = new ScrapeInfo();
+				List<PeerInfo> seeders = DataManager.seeders.get(infoHash);
+				List<PeerInfo> leechers = DataManager.leechers.get(infoHash);
+				
+				scrapeInfo.setCompleted(seeders.size());
+				scrapeInfo.setLeechers(leechers.size());
+				scrapeInfo.setSeeders(seeders.size());
+				
+				scrapeResponse.addScrapeInfo(scrapeInfo);
+			}
 			
-			//TODO-AAESH: nos falta downloads del infohash
-			scrapeInfo.setCompleted(0);
-			
-			scrapeInfo.setLeechers(leechers.size());
-			scrapeInfo.setSeeders(seeders.size());
-			
-			scrapeResponse.addScrapeInfo(scrapeInfo);
+			sendResponseMessage(scrapeResponse, address, port);
 		}
-		
-		sendResponseMessage(scrapeResponse, address, port);
-		
 	}
 
 	private void processConnectRequestMessageAndSendResponseMessage(byte[] data, InetAddress address,
@@ -324,7 +323,7 @@ public class UDPManager implements Runnable {
 		if(numberOfSeeding ==0)
 			return minimumNumbersOfPeers;
 		else{
-			int ratio=numberOfSeeding/10;
+			int ratio=numberOfSeeding;
 			for(int i=0;i<ratio;i++){
 				numberOfPeers=numberOfPeers+10;
 			}
@@ -380,7 +379,7 @@ public class UDPManager implements Runnable {
 		}
 		if ( isScrapeRequest)
 		{
-			ScrapeRequest scrapeRequest = ScrapeRequest.parse(Utils.parsearArrayBytes(packet.getData(), packet.getLength()) );
+			ScrapeRequest scrapeRequest = ScrapeRequest.parse ( packet.getData() );
 			
 			if ( !scrapeRequest.getAction().equals(Action.SCRAPE) )
 			{

@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import es.deusto.ssdd.tracker.metainfo.MetainfoFile;
+import es.deusto.ssdd.tracker.metainfo.handler.MetainfoHandler;
+
 /**
  * 
  * Offset          Size            	Name            	Value
@@ -56,19 +59,25 @@ public class ScrapeRequest extends BitTorrentUDPRequestMessage {
 		scrapeRequest.setAction(Action.valueOf(bufferReceive.getInt(8)));
 		scrapeRequest.setTransactionId(bufferReceive.getInt(12));
 		int inicio = 16;
-		List<String> infoHashes = new ArrayList<String>();
-		for ( inicio = 16; inicio < byteArray.length; inicio += 20 )
+		boolean encInfohashErrroneo = false;
+		for ( inicio = 16; inicio < byteArray.length && !encInfohashErrroneo ; inicio += 20 )
 		{
 			byte[] infoHashBytes = new byte [20];
 			bufferReceive.position(inicio);
 			bufferReceive.get(infoHashBytes);
-			infoHashes.add(new String ( infoHashBytes ) );
+			String infoHash = MetainfoHandler.toHexString( infoHashBytes );
+			if ( !infoHash.matches("[0]+") )
+			{
+				scrapeRequest.addInfoHash( MetainfoHandler.toHexString( infoHashBytes) , infoHashBytes);
+			}
+			else
+				encInfohashErrroneo = true;
 		}
 		return scrapeRequest;
 	}
 	
 	public List<String> getInfoHashes() {
-		return (List<String>) infoHashes.keySet();
+		return new ArrayList<String> ( infoHashes.keySet() );
 	}
 
 	public void addInfoHash(String infoHash, byte [] bytesInfoHash ) {

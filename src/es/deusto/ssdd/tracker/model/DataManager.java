@@ -7,10 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
 import es.deusto.ssdd.tracker.vo.Peer;
@@ -19,12 +17,13 @@ public class DataManager {
 
 	private Connection con;
 	private static DataManager instance;
+	public static Map<Long,Peer> sessionsForPeers;
 	public static Map<Long,Peer> peers;
 	public static Map<String,List<PeerInfo>> seeders;
 	public static Map<String,List<PeerInfo>> leechers;
 
 	private DataManager() {
-		peers = new HashMap<Long,Peer> ();
+		sessionsForPeers = new HashMap<Long,Peer> ();
 		seeders= new HashMap<String,List<PeerInfo>>();
 		leechers=new HashMap<String,List<PeerInfo>>();
 		
@@ -235,9 +234,6 @@ public class DataManager {
 				}
 			}
 		}
-			
-
-
 	}
 
 	public void closeConnection() {
@@ -253,13 +249,13 @@ public class DataManager {
 	public String addPeerToMemory ( Peer peer , long connectionId )
 	{
 		String response = "";
-		if ( peers.containsKey(connectionId ) )
+		if ( sessionsForPeers.containsKey(connectionId ) )
 		{
 			response = "500 ALREADY EXISTS THIS CONNECTION ID";
 		}
 		else
 		{
-			peers.put(connectionId, peer );
+			sessionsForPeers.put(connectionId, peer );
 			response = "200 OK";
 		}
 		return response;
@@ -268,14 +264,16 @@ public class DataManager {
 	public String updatePeerMemory ( Peer peer, long connectionId )
 	{
 		String response = "";
-		if ( peers.containsKey(connectionId ) )
+		if ( sessionsForPeers.containsKey(connectionId ) )
 		{
-			Peer updtPeer = peers.get(connectionId);
+			Peer sessionPeer = sessionsForPeers.get(connectionId);
+			Peer updtPeer = sessionPeer;
 			updtPeer.setDownloaded(peer.getDownloaded());
 			updtPeer.setId(peer.getId());
 			updtPeer.setIpAddress(peer.getIpAddress());
 			updtPeer.setPort(peer.getPort());
 			updtPeer.setUploaded(peer.getUploaded());
+			peers.put(connectionId, updtPeer);
 			response = "200 OK";
 		}
 		else
@@ -301,8 +299,7 @@ public class DataManager {
 			con.commit();
 			insertNewTorrent();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println("#SQL EXCEPTION (insertLeechersAndSeeders) : " + e.getMessage() );
 		}
 	}
 	

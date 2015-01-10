@@ -23,6 +23,7 @@ import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
 import es.deusto.ssdd.tracker.udp.messages.ScrapeInfo;
 import es.deusto.ssdd.tracker.udp.messages.ScrapeRequest;
 import es.deusto.ssdd.tracker.udp.messages.ScrapeResponse;
+import es.deusto.ssdd.tracker.vo.Constants;
 import es.deusto.ssdd.tracker.vo.Peer;
 
 public class UDPManager implements Runnable {
@@ -50,6 +51,7 @@ public class UDPManager implements Runnable {
 	public void run() {
 		topicManager = TopicManager.getInstance();
 		createSocket();
+		generateThreadToRemovePeerSessions();
 		socketListeningPackets();
 
 	}
@@ -89,42 +91,80 @@ public class UDPManager implements Runnable {
 					processScrapeRequestMessageAndSendResponseMessage (packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
 				}
 				String messageReceived = new String(packet.getData());
-				System.out.println("Received message: " + messageReceived);
+				System.out.println("Received message: " + messageReceived );
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
+	/**
+	 * This private method delete a map with the sessions of the peers
+	 */
+	private void generateThreadToRemovePeerSessions () {
+		
+		Thread threadRemovePeersSessions = new Thread() {
+
+			public void run() {
+				try {
+					Thread.sleep(300000);
+					DataManager.sessionsForPeers.clear();
+					System.out.println ("The sessions of the peers have been expired");
+				} catch (InterruptedException e1) {
+					System.err.println("# Interrupted Exception: " + e1.getMessage());
+				}
+				
+			}
+		};
+		
+		threadRemovePeersSessions.start();
+	}
+
+	
+	
 	private void processScrapeRequestMessageAndSendResponseMessage ( byte[] data, int length, InetAddress address, int port )
 	{
 		ScrapeRequest msgScrapeRequest = ScrapeRequest.parse( data );
 		
-		//The info hash that is to be scraped
-		
-		List<String> infoHashes = msgScrapeRequest.getInfoHashes();
-		
-		ScrapeResponse scrapeResponse = new ScrapeResponse();
-		scrapeResponse.setTransactionId(msgScrapeRequest.getTransactionId());
-		
-		ScrapeInfo scrapeInfo = null;
-		if ( infoHashes != null && infoHashes.size() > 0 )
+		//First of all we check the sent connection id exists
+		if ( DataManager.sessionsForPeers.containsKey(msgScrapeRequest.getConnectionId()) && 
+				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgScrapeRequest).getIpAddress()))
 		{
-			for ( String infoHash : infoHashes )
-			{
-				scrapeInfo = new ScrapeInfo();
-				List<PeerInfo> seeders = DataManager.seeders.get(infoHash);
-				List<PeerInfo> leechers = DataManager.leechers.get(infoHash);
-				
-				scrapeInfo.setCompleted(seeders.size());
-				scrapeInfo.setLeechers(leechers.size());
-				scrapeInfo.setSeeders(seeders.size());
-				
-				scrapeResponse.addScrapeInfo(scrapeInfo);
-			}
+			//The info hash that is to be scraped
+			List<String> infoHashes = msgScrapeRequest.getInfoHashes();
 			
-			sendResponseMessage(scrapeResponse, address, port);
+			ScrapeResponse scrapeResponse = new ScrapeResponse();
+			scrapeResponse.setTransactionId(msgScrapeRequest.getTransactionId());
+			
+			ScrapeInfo scrapeInfo = null;
+			if ( infoHashes != null && infoHashes.size() > 0 )
+			{
+				for ( String infoHash : infoHashes )
+				{
+					scrapeInfo = new ScrapeInfo();
+					List<PeerInfo> seeders = DataManager.seeders.get(infoHash);
+					List<PeerInfo> leechers = DataManager.leechers.get(infoHash);
+					
+					scrapeInfo.setCompleted(seeders.size());
+					scrapeInfo.setLeechers(leechers.size());
+					scrapeInfo.setSeeders(seeders.size());
+					
+					scrapeResponse.addScrapeInfo(scrapeInfo);
+				}
+				
+				sendResponseMessage(scrapeResponse, address, port);
+			}
+			else
+			{
+				sendErrorMessage( Constants.ERROR_AT_LEAST_ONE_INFOHASH , msgScrapeRequest.getTransactionId(), address, port);
+			}
 		}
+		else
+		{
+			sendErrorMessage(Constants.ERROR_CONNECTION_ID_EXPIRED, msgScrapeRequest.getTransactionId(), address, port);
+		}
+		
+
 	}
 
 	private void processConnectRequestMessageAndSendResponseMessage(byte[] data, InetAddress address,
@@ -141,7 +181,7 @@ public class UDPManager implements Runnable {
 		//check if the connectionId has been initialized correctly by the peer
 		if ( msgConnectRequest.getConnectionId() != Long.decode("0x41727101980") )
 		{
-			response = "The connection id must be initialized to 0x41727101980";
+			response = Constants.ERROR_CONNECTION_ID_MUST_BE_INITIALIZED;
 		}
 		
 		if ( response == null )
@@ -186,84 +226,100 @@ public class UDPManager implements Runnable {
 			InetAddress address, int port) {
 		AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(data);
 		
-		// store data over memory..
-		Peer peer = new Peer();
-		peer.setDownloaded(msgAnnounceRequest.getDownloaded());
-		peer.setUploaded(msgAnnounceRequest.getUploaded());
-		peer.setLeft(msgAnnounceRequest.getLeft());
-		peer.setId(msgAnnounceRequest.getPeerId());
-		
 		String response = null;
 		
-		//Update the ip and the port by the data coming from the AnnounceRequest
-		PeerInfo peerInfo = msgAnnounceRequest.getPeerInfo();
-		//Set to 0 if you want the tracker to use the sender of this udp packet.
-		if ( peerInfo != null && peerInfo.equals(0) )
-			peer.setIpAddress(address.getHostAddress());
-		else if ( peerInfo != null )
-			peer.setIpAddress( PeerInfo.toStringIpAddress( peerInfo.getIpAddress() ) );
-		else
-			response = "Specify the IP address";
-		
-		peer.setPort(peerInfo.getPort());
-		response = dataManager.updatePeerMemory(peer, msgAnnounceRequest.getConnectionId() );
-		
-		boolean infoHashExists=dataManager.existsInfoHashInMemory(msgAnnounceRequest.getInfoHash());
-		if(infoHashExists){
-			List<PeerInfo>lLeechers=DataManager.leechers.get(msgAnnounceRequest.getInfoHash());
-			List<PeerInfo>lSeeders=DataManager.seeders.get(msgAnnounceRequest.getInfoHash());
-			boolean contains=false;
-			for(PeerInfo peerInfoI:lLeechers){
-				if(peerInfoI.compareTo(peerInfo)==0){
-					contains=true;
-					lLeechers.remove(peerInfoI);
-					break;
-				}
+		//First of all we check the sent connection id exists
+		if ( DataManager.sessionsForPeers.containsKey(msgAnnounceRequest.getConnectionId()) && 
+				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgAnnounceRequest).getIpAddress()))
+		{
+			// store data over memory..
+			Peer peer = new Peer();
+			peer.setDownloaded(msgAnnounceRequest.getDownloaded());
+			peer.setUploaded(msgAnnounceRequest.getUploaded());
+			peer.setLeft(msgAnnounceRequest.getLeft());
+			peer.setId(msgAnnounceRequest.getPeerId());
+			//Update the ip and the port by the data coming from the AnnounceRequest
+			PeerInfo peerInfo = msgAnnounceRequest.getPeerInfo();
+			//Set to 0 if you want the tracker to use the sender of this udp packet.
+			if ( peerInfo != null )
+			{
+				if ( peerInfo.getIpAddress() == 0 )
+					peer.setIpAddress(address.getHostAddress());
+				else
+					peer.setIpAddress( PeerInfo.toStringIpAddress( peerInfo.getIpAddress() ) );
 			}
-			if(!contains){
-				for(PeerInfo peerInfoI:lSeeders){
-					if(peerInfoI.compareTo(peerInfo)==0){
-						contains=true;
-						lSeeders.remove(peerInfoI);
-						break;
-					}
-				}
-			}
+			else
+				response = Constants.ERROR_YOU_NEED_TO_SPECIFY_IP_ADDRESS;
+			
+			peer.setPort(peerInfo.getPort());
+			response = dataManager.updatePeerMemory(peer, msgAnnounceRequest.getConnectionId() );
+			
+			boolean infoHashExists=dataManager.existsInfoHashInMemory(msgAnnounceRequest.getInfoHash());
+			
 			PeerInfo peerInfoForMemory = new PeerInfo();
 			peerInfoForMemory.setIpAddress(PeerInfo.parseIp(peer.getIpAddress()));
 			peerInfoForMemory.setPort(peer.getPort());
 			peerInfoForMemory.setId(peer.getId());
 			
-			if(msgAnnounceRequest.getEvent().equals(Event.COMPLETED)){
-				DataManager.seeders.get(msgAnnounceRequest.getInfoHash()).add(peerInfoForMemory);
+			if(infoHashExists){
+				updateListOfSeedersAndlLeechers ( msgAnnounceRequest.getInfoHash(), msgAnnounceRequest.getEvent(), peerInfoForMemory );
 			}else{
-				DataManager.leechers.get(msgAnnounceRequest.getInfoHash()).add(peerInfoForMemory);
-			}	
-		}else{
-			List<PeerInfo>tmpList=new ArrayList<PeerInfo>();
-			PeerInfo peerInfoForMemory = new PeerInfo();
-			peerInfoForMemory.setIpAddress(PeerInfo.parseIp(peer.getIpAddress()));
-			peerInfoForMemory.setPort(peer.getPort());
-			peerInfoForMemory.setId(peer.getId());
-			tmpList.add(peerInfoForMemory);
-			if(msgAnnounceRequest.getEvent().equals(Event.COMPLETED)){
-				DataManager.seeders.put(msgAnnounceRequest.getInfoHash(), tmpList);
-			}else{
-				DataManager.leechers.put(msgAnnounceRequest.getInfoHash(), tmpList);
-			}	
+				List<PeerInfo>tmpList=new ArrayList<PeerInfo>();
+				tmpList.add(peerInfoForMemory);
+				
+				if(msgAnnounceRequest.getEvent().equals(Event.COMPLETED)){
+					DataManager.seeders.put(msgAnnounceRequest.getInfoHash(), tmpList);
+				}else
+				{
+					DataManager.leechers.put(msgAnnounceRequest.getInfoHash(), tmpList);
+				}	
+			}
+			
+			if ( response != null && response.contains("OK") )
+			{
+				sendAnnounceResponseMessage(msgAnnounceRequest, address, port );
+				return true;
+			}
+			else
+			{
+				sendErrorMessage(response, msgAnnounceRequest.getTransactionId(), address, port);
+				return false;
+			}
 		}
-		
-		if ( response != null && response.contains("OK") )
-		{
-			sendAnnounceResponseMessage(msgAnnounceRequest, address, port );
-			return true;
-		}
+	
 		else
 		{
-			sendErrorMessage(response, msgAnnounceRequest.getTransactionId(), address, port);
+			sendErrorMessage(Constants.ERROR_CONNECTION_ID_EXPIRED, msgAnnounceRequest.getTransactionId(), address, port);
 			return false;
+		}	
+	}
+	
+	private void updateListOfSeedersAndlLeechers ( String infoHash, Event evento, PeerInfo peerInfo ) {
+		List<PeerInfo>lLeechers=DataManager.leechers.get(infoHash);
+		List<PeerInfo>lSeeders=DataManager.seeders.get(infoHash);
+		boolean contains=false;
+		for(PeerInfo peerInfoI:lLeechers){
+			if(peerInfoI.compareTo(peerInfo)==0){
+				contains=true;
+				lLeechers.remove(peerInfoI);
+				break;
+			}
 		}
-		
+		if(!contains){
+			for(PeerInfo peerInfoI:lSeeders){
+				if(peerInfoI.compareTo(peerInfo)==0){
+					contains=true;
+					lSeeders.remove(peerInfoI);
+					break;
+				}
+			}
+		}
+
+		if(evento.equals(Event.COMPLETED)){
+			DataManager.seeders.get(infoHash).add(peerInfo);
+		}else{
+			DataManager.leechers.get(infoHash).add(peerInfo);
+		}	
 	}
 	
 	/**

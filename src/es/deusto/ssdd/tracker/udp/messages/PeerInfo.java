@@ -1,5 +1,6 @@
 package es.deusto.ssdd.tracker.udp.messages;
 
+import java.nio.ByteBuffer;
 import java.util.regex.Pattern;
 
 /**
@@ -65,8 +66,15 @@ public class PeerInfo implements Comparable{
 	}
 	
 	public static void main ( String [] args ) {
-		int numero = PeerInfo.parseIp("127.0.0.1");
-		System.out.println(numero);
+		int port = 50600;
+		
+		ByteBuffer byteBuffer = ByteBuffer.allocate(2);
+		byteBuffer.putChar(0, (char) port );
+		byteBuffer.flip();
+		
+		ByteBuffer bufferReceive = ByteBuffer.wrap(byteBuffer.array());
+		
+		System.out.println( bufferReceive.getChar( 0 ) );
 	}
 
 	@Override

@@ -23,14 +23,15 @@ public class Error extends BitTorrentUDPMessage {
 	@Override
 	public byte[] getBytes() {
 		
-		ByteBuffer byteBuffer = ByteBuffer.allocate(16);
+		int size = 8 + message.getBytes().length;
+		ByteBuffer byteBuffer = ByteBuffer.allocate(size);
 
 		byteBuffer.order(ByteOrder.BIG_ENDIAN);
 
-		byteBuffer.putLong(0, getAction().value() );
+		byteBuffer.putInt(0, getAction().value() );
 		byteBuffer.putInt(4, getTransactionId() );
 		byteBuffer.position(8);
-		byteBuffer.put(message.getBytes() );
+		byteBuffer.put( message.getBytes() );
 
 		byteBuffer.flip();
 		
@@ -43,7 +44,7 @@ public class Error extends BitTorrentUDPMessage {
 		Error error = new Error();
 		error.setAction(Action.valueOf(bufferReceive.getInt(0) ));
 		error.setTransactionId(bufferReceive.getInt(4));
-		byte [] message = new byte[20];
+		byte [] message = new byte[byteArray.length-8];
 		bufferReceive.position(8);
 		bufferReceive.get ( message );
 		error.setMessage(message.toString());
@@ -56,5 +57,11 @@ public class Error extends BitTorrentUDPMessage {
 
 	public void setMessage(String message) {
 		this.message = message;
+	}
+	
+	public static void main ( String [] args )
+	{
+		String error = "Prueba tottoot gfgdgfdfghg";
+		System.out.println( error.getBytes().length );
 	}
 }

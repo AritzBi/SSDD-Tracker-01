@@ -10,6 +10,7 @@ public class Constants {
 	public static String TYPE_BACKUP_MESSAGE = "BackUp";
 	
 	public static String ERROR_AT_LEAST_ONE_INFOHASH = "You need to specify at least one infohash";
+	public static String ERROR_THE_SPECIFIED_INFOHASH_DOES_NOT_EXIST = "Info_hash does not exist";
 	public static String ERROR_CONNECTION_ID_EXPIRED = "The connection id has been expired";
 	public static String ERROR_CONNECTION_ID_MUST_BE_INITIALIZED = "The connection id must be initialized to 0x41727101980";
 	public static String ERROR_YOU_NEED_TO_SPECIFY_IP_ADDRESS ="Specify an Ip Address";

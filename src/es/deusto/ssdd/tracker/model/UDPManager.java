@@ -128,7 +128,7 @@ public class UDPManager implements Runnable {
 		
 		//First of all we check the sent connection id exists
 		if ( DataManager.sessionsForPeers.containsKey(msgScrapeRequest.getConnectionId()) && 
-				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgScrapeRequest).getIpAddress()))
+				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgScrapeRequest.getConnectionId()).getIpAddress()))
 		{
 			//The info hash that is to be scraped
 			List<String> infoHashes = msgScrapeRequest.getInfoHashes();
@@ -139,20 +139,44 @@ public class UDPManager implements Runnable {
 			ScrapeInfo scrapeInfo = null;
 			if ( infoHashes != null && infoHashes.size() > 0 )
 			{
+				String errorMessage = "";
+				
 				for ( String infoHash : infoHashes )
 				{
 					scrapeInfo = new ScrapeInfo();
 					List<PeerInfo> seeders = DataManager.seeders.get(infoHash);
 					List<PeerInfo> leechers = DataManager.leechers.get(infoHash);
 					
-					scrapeInfo.setCompleted(seeders.size());
-					scrapeInfo.setLeechers(leechers.size());
-					scrapeInfo.setSeeders(seeders.size());
-					
-					scrapeResponse.addScrapeInfo(scrapeInfo);
+					if ( seeders != null )
+					{
+						scrapeInfo.setCompleted(seeders.size());
+						scrapeInfo.setSeeders(seeders.size());
+					}
+					if ( leechers != null )
+					{
+						scrapeInfo.setLeechers(leechers.size());
+					}
+					if ( seeders != null || leechers != null )
+					{
+						scrapeResponse.addScrapeInfo(scrapeInfo);
+					}
+					else
+					{
+						errorMessage += Constants.ERROR_THE_SPECIFIED_INFOHASH_DOES_NOT_EXIST + "( " + infoHash + " ) \n";
+					}
 				}
 				
-				sendResponseMessage(scrapeResponse, address, port);
+				if ( scrapeResponse.getScrapeInfos().size() > 0 )
+				{
+					sendResponseMessage(scrapeResponse, address, port);
+				}
+				else
+				{
+					if ( !errorMessage.equals("") )
+					{
+						sendErrorMessage(errorMessage, msgScrapeRequest.getTransactionId(), address, port);
+					}
+				}
 			}
 			else
 			{
@@ -230,7 +254,7 @@ public class UDPManager implements Runnable {
 		
 		//First of all we check the sent connection id exists
 		if ( DataManager.sessionsForPeers.containsKey(msgAnnounceRequest.getConnectionId()) && 
-				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgAnnounceRequest).getIpAddress()))
+				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgAnnounceRequest.getConnectionId()).getIpAddress()))
 		{
 			// store data over memory..
 			Peer peer = new Peer();

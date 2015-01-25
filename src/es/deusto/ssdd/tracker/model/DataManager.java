@@ -24,6 +24,7 @@ public class DataManager {
 
 	private DataManager() {
 		sessionsForPeers = new HashMap<Long,Peer> ();
+		peers = new HashMap<Long, Peer>();
 		seeders= new HashMap<String,List<PeerInfo>>();
 		leechers=new HashMap<String,List<PeerInfo>>();
 		

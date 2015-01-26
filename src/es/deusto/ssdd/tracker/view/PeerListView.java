@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -18,6 +20,8 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 
 import es.deusto.ssdd.tracker.controller.PeerListController;
+import es.deusto.ssdd.tracker.udp.messages.PeerInfo;
+import es.deusto.ssdd.tracker.vo.Peer;
 
 public class PeerListView extends JPanel implements Observer, ActionListener {
 
@@ -30,16 +34,52 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 
 	public PeerListView(PeerListController peerListController) {
 		controller = peerListController;
-		//controller.addObserver(this);
+		controller.addObserver(this);
 		createTable();
 	}
 
 	@Override
 	public void update(Observable o, Object arg) {
-		// TODO Auto-generated method stub
-
+		if (arg.equals("NewPeer") ) {
+			updateTable();
+		}
 	}
 
+	private synchronized void updateTable() {
+
+		generateTrackersData();
+		model.setRowCount(0);
+		for (int i = 0; i < rows.length; i++) {
+			model.addRow(rows[i]);
+		}
+		// model.setDataVector(rows, columnNames);
+		model.fireTableDataChanged();
+		//configureSizesOfTable(table);
+		// table.repaint();
+
+	}
+	public void generateTrackersData() {
+		List<Peer> listActivePeers = controller.getPeerList();
+		System.out.println("Lista de Peers actual "
+				+ listActivePeers.toString());
+		rows = new Object[listActivePeers.size()][];
+		Object[] rowData;
+		Peer peer;
+		for (int i = 0; i < listActivePeers.size(); i++) {
+			peer = listActivePeers.get(i);
+			if (peer != null) {
+				rowData = new Object[5];
+				rowData[0] = peer.getId();
+				rowData[1] = peer.getIpAddress();
+				rowData[2] = peer.getPort();
+				rowData[3]=peer.getDownloaded();
+				rowData[4]=peer.getUploaded();
+				rows[i] = rowData;
+			}
+		}
+		
+		
+	}
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
@@ -49,7 +89,7 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 	public void createTable() {
 		String[] columnNames = { "Peer ID", "IP", "Port", "Downloaded",
 				"Uploaded", "Torrents" };
-		generateTestData();
+		//generateTestData();
 		model = new MyButtonModel();
 		model.setColumnIdentifiers(columnNames);
 		model.setDataVector(rows, columnNames);
@@ -67,7 +107,7 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 		this.add(scrollPane);
 	}
 
-	public void generateTestData() {
+	/*public void generateTestData() {
 		rows = new Object[numberRowsExample][];
 		Object[] rowData;
 		for (int i = 0; i < numberRowsExample; i++) {
@@ -91,6 +131,46 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 			data[i] = rowData;
 		}
 		return data;
+	}*/
+	public Object[][] generateTorrentsData(int row) {
+		String id=(String) rows[row][0];
+		System.out.println("Id:"+ id);
+		ArrayList<String[]>matches=new ArrayList<>();
+		for(String key:controller.getLeechersList().keySet()){
+			System.out.println("KEY"+ key);
+			for(PeerInfo peer: controller.getLeechersList().get(key)){
+				if(peer.getId().equals(id)){
+					System.out.println("The same id, so is a leecher");
+					String []array=new String[2];
+					array[0]=key;
+					array[1]="LEECHER";
+					matches.add(array);
+					break;
+				}
+			}
+		}
+		for(String key:controller.getSeedersList().keySet()){
+			System.out.println("KEY"+ key);
+			for(PeerInfo peer: controller.getSeedersList().get(key)){
+				if(peer.getId().equals(id)){
+					System.out.println("The same id, so is a seeder");
+					String []array=new String[2];
+					array[0]=key;
+					array[1]="SEEDER";
+					matches.add(array);
+					break;
+				}
+			}
+		}
+		Object[][] data = new Object[matches.size()][];
+		Object[] rowData;
+		for (int i = 0; i < matches.size(); i++) {
+			rowData = new Object[2];
+			rowData[0] = matches.get(i)[0];
+			rowData[1] = matches.get(i)[1];
+			data[i] = rowData;
+		}
+		return data;
 	}
 
 	class JTableButtonMouseListener implements MouseListener {
@@ -99,9 +179,9 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 			TableColumnModel columnModel = table.getColumnModel();
 			int column = columnModel.getColumnIndexAtX(e.getX());
 			// TODO Use the rows later
-			// int row = e.getY() / table.getRowHeight();
+			 int row = e.getY() / table.getRowHeight();
 			if (column == 5) {
-				new TorrentsListView(generateTorrentTestData());
+				new TorrentsListView(generateTorrentsData(row));
 			}
 
 		}

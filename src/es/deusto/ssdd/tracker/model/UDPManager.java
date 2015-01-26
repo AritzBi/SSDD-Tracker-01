@@ -212,11 +212,12 @@ public class UDPManager implements Runnable {
 		{
 			//Calculate an unique connection id number that identifies the peer
 			long connectionId = new Random().nextLong();
-			
+			System.out.println(peer);
 			response = dataManager.addPeerToMemory(peer, connectionId);
 			
 			if ( response.contains("OK") )
-			{
+			{		
+					this.notifyObservers(new String("NewPeer"));
 					ConnectResponse connectResponse = new ConnectResponse();
 					connectResponse.setTransactionId(msgConnectRequest.getTransactionId());
 					connectResponse.setConnectionId( connectionId );
@@ -257,7 +258,8 @@ public class UDPManager implements Runnable {
 				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgAnnounceRequest.getConnectionId()).getIpAddress()))
 		{
 			// store data over memory..
-			Peer peer = new Peer();
+			/*Peer peer = new Peer();*/
+			Peer peer=DataManager.sessionsForPeers.get(msgAnnounceRequest.getConnectionId());
 			peer.setDownloaded(msgAnnounceRequest.getDownloaded());
 			peer.setUploaded(msgAnnounceRequest.getUploaded());
 			peer.setLeft(msgAnnounceRequest.getLeft());
@@ -277,7 +279,6 @@ public class UDPManager implements Runnable {
 			
 			peer.setPort(peerInfo.getPort());
 			response = dataManager.updatePeerMemory(peer, msgAnnounceRequest.getConnectionId() );
-			
 			boolean infoHashExists=dataManager.existsInfoHashInMemory(msgAnnounceRequest.getInfoHash());
 			
 			PeerInfo peerInfoForMemory = new PeerInfo();
@@ -287,6 +288,7 @@ public class UDPManager implements Runnable {
 			
 			if(infoHashExists){
 				updateListOfSeedersAndlLeechers ( msgAnnounceRequest.getInfoHash(), msgAnnounceRequest.getEvent(), peerInfoForMemory );
+				this.notifyObservers(new String("NewPeer"));
 			}else{
 				List<PeerInfo>tmpList=new ArrayList<PeerInfo>();
 				tmpList.add(peerInfoForMemory);
@@ -297,6 +299,7 @@ public class UDPManager implements Runnable {
 				{
 					DataManager.leechers.put(msgAnnounceRequest.getInfoHash(), tmpList);
 				}	
+				this.notifyObservers(new String("NewPeer"));
 			}
 			
 			if ( response != null && response.contains("OK") )

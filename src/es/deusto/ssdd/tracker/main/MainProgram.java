@@ -37,7 +37,7 @@ public class MainProgram {
 
 		DataManager dataManager = DataManager.getInstance();
 		PeerListController peerListController = new PeerListController(
-				dataManager);
+				udpManager);
 		PeerListView peerListView = new PeerListView(peerListController);
 
 		globalManager.setRedundancyManager(redundancyManager);

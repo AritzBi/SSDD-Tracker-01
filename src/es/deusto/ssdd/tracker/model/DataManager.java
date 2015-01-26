@@ -292,6 +292,7 @@ public class DataManager {
 	}
 	//TODO Pasarlo a un hilo
 	public void insertLeechersAndSeeders (){
+		System.out.println("BoRRO");
 		String sqlString = "Delete from TORRENT_PEER ";
 		executeQuery(sqlString);
 		sqlString = "Delete from TORRENT ";
@@ -324,4 +325,38 @@ public class DataManager {
 		}
 		return number;
 	}
+
+	public static Map<Long, Peer> getSessionsForPeers() {
+		return sessionsForPeers;
+	}
+
+	public static void setSessionsForPeers(Map<Long, Peer> sessionsForPeers) {
+		DataManager.sessionsForPeers = sessionsForPeers;
+	}
+
+	public static Map<Long, Peer> getPeers() {
+		return peers;
+	}
+
+	public static void setPeers(Map<Long, Peer> peers) {
+		DataManager.peers = peers;
+	}
+
+	public static Map<String, List<PeerInfo>> getSeeders() {
+		return seeders;
+	}
+
+	public static void setSeeders(Map<String, List<PeerInfo>> seeders) {
+		DataManager.seeders = seeders;
+	}
+
+	public static Map<String, List<PeerInfo>> getLeechers() {
+		return leechers;
+	}
+
+	public static void setLeechers(Map<String, List<PeerInfo>> leechers) {
+		DataManager.leechers = leechers;
+	}
+	
+	
 }

@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,14 +54,62 @@ public class DataManager {
 					+ ex.getMessage());
 		}
 	}
+	
+	public void updatePeer ( Peer peer ) {
+		
+		long last_connection = new Date().getTime();
+		
+		String sqlString = "UPDATE PEER SET downloaded = " + peer.getDownloaded() + " ,uploaded = " + peer.getUploaded() + " ,last_connection = " + last_connection + " WHERE ip = ? AND port = ?";
+		
+		try (PreparedStatement stmt = con.prepareStatement(sqlString)) {
+			stmt.setString(1, peer.getIpAddress());
+			stmt.setInt(2, peer.getPort());
+			
+			if (stmt.executeUpdate() != 0) {
+				System.out.println("\n - Peer has been updated :)");
+				con.commit();
+			} else {
+				System.err.println("\n - Peer wasn't updated. :(");
+				con.rollback();
+			}	
+		} catch (Exception ex) {
+			System.err.println("\n # Error updating data in the db: " + ex.getMessage());
+		}
+	
+	}
+	
+	public boolean existsPeer ( String ipAddress, int port )
+	{
+		
+		boolean enc = false;
+		if ( ipAddress != null && !ipAddress.isEmpty() )
+		{
+			String sqlString = "Select id from PEER where IP = '" + ipAddress + "' AND PORT = " + port;
+			
+			try (PreparedStatement stmt = con.prepareStatement(sqlString)) {			
+				ResultSet rs = stmt.executeQuery();
+				String id = rs.getString("id");
+				
+				if ( id != null && !id.isEmpty() )
+				{
+					enc = true;
+				}
+			} catch (Exception ex) {
+				System.err.println("\n # Error loading data from the db: " + ex.getMessage());
+			}
+		}
+		return enc;
+	}
 
 	public void insertNewPeer(Peer peer) {
 
+		long last_connection = new Date().getTime();
+		
 		if (peer.getId() != null && !peer.getId().isEmpty()
 				&& peer.getIpAddress() != null
 				&& !peer.getIpAddress().isEmpty() ) {
 
-			String sqlString = "INSERT INTO PEER ('id', 'ip', 'port', 'downloaded','uploaded') VALUES (?,?,?,?,?)";
+			String sqlString = "INSERT INTO PEER ('id', 'ip', 'port', 'downloaded','uploaded','last_connection') VALUES (?,?,?,?,?,?)";
 
 			try (PreparedStatement stmt = con.prepareStatement(sqlString)) {
 				stmt.setString(1, peer.getId());
@@ -68,6 +117,7 @@ public class DataManager {
 				stmt.setInt(3, peer.getPort());
 				stmt.setFloat(4, peer.getDownloaded());
 				stmt.setFloat(5, peer.getUploaded());
+				stmt.setLong(6, last_connection);
 
 				if (stmt.executeUpdate() == 1) {
 					System.out.println("\n - A new peer was inserted. :)");
@@ -86,6 +136,33 @@ public class DataManager {
 					.println("\n # Error inserting a new Peer: some parameters are 'null' or 'empty'.");
 		}
 
+	}
+	
+	public List<Peer> findAllPeers () {
+		
+			List<Peer> peers = new ArrayList<Peer>();
+			String sqlString = "Select * from PEER";
+			
+			try (PreparedStatement stmt = con.prepareStatement(sqlString)) {			
+				ResultSet rs = stmt.executeQuery();
+				while ( rs.next() )
+				{
+					Peer peer = new Peer();
+					peer.setId(rs.getString("id"));
+					peer.setDownloaded(rs.getFloat("downloaded"));
+					peer.setUploaded(rs.getFloat("uploaded"));
+					peer.setIpAddress(rs.getString("ip"));
+					peer.setLastConnection(rs.getLong("last_connection"));
+					peer.setPort(rs.getInt("port"));
+					
+					peers.add( peer );
+				}
+				
+			} catch (Exception ex) {
+				System.err.println("\n # Error loading data from the db: " + ex.getMessage());
+			}
+	
+		return peers;
 	}
 	public void initializeLists(){
 		List<String>infoHashes=findAllInfoHashes();
@@ -292,7 +369,6 @@ public class DataManager {
 	}
 	//TODO Pasarlo a un hilo
 	public void insertLeechersAndSeeders (){
-		System.out.println("BoRRO");
 		String sqlString = "Delete from TORRENT_PEER ";
 		executeQuery(sqlString);
 		sqlString = "Delete from TORRENT ";

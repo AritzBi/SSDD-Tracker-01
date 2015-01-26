@@ -68,12 +68,13 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 		for (int i = 0; i < listActivePeers.size(); i++) {
 			peer = listActivePeers.get(i);
 			if (peer != null) {
-				rowData = new Object[5];
+				rowData = new Object[6];
 				rowData[0] = peer.getId();
 				rowData[1] = peer.getIpAddress();
 				rowData[2] = peer.getPort();
 				rowData[3]=peer.getDownloaded();
 				rowData[4]=peer.getUploaded();
+				rowData[5]=peer.getLastConnectionFormateada();
 				rows[i] = rowData;
 			}
 		}
@@ -88,7 +89,7 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 
 	public void createTable() {
 		String[] columnNames = { "Peer ID", "IP", "Port", "Downloaded",
-				"Uploaded", "Torrents" };
+				"Uploaded", "Last Connection", "Torrents" };
 		//generateTestData();
 		model = new MyButtonModel();
 		model.setColumnIdentifiers(columnNames);
@@ -97,9 +98,12 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 		table.getColumnModel().getColumn(0).setPreferredWidth(80);
 		table.getColumnModel().getColumn(1).setPreferredWidth(100);
 		table.getColumnModel().getColumn(2).setPreferredWidth(55);
-		table.getColumnModel().getColumn(3).setPreferredWidth(100);
+		table.getColumnModel().getColumn(3).setPreferredWidth(55);
+		table.getColumnModel().getColumn(4).setPreferredWidth(55);
+		table.getColumnModel().getColumn(5).setPreferredWidth(55);
+		table.getColumnModel().getColumn(6).setPreferredWidth(100);
 		TableColumnModel colModel = table.getColumnModel();
-		colModel.getColumn(5).setCellRenderer(new ButtonRenderer());
+		colModel.getColumn(6).setCellRenderer(new ButtonRenderer());
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		table.addMouseListener(new JTableButtonMouseListener());
 		JScrollPane scrollPane = new JScrollPane(table);

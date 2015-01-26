@@ -8,7 +8,6 @@ import javax.swing.JPanel;
 import es.deusto.ssdd.tracker.controller.ConfigurationController;
 import es.deusto.ssdd.tracker.controller.PeerListController;
 import es.deusto.ssdd.tracker.controller.TrackerListController;
-import es.deusto.ssdd.tracker.model.DataManager;
 import es.deusto.ssdd.tracker.model.GlobalManager;
 import es.deusto.ssdd.tracker.model.RedundancyManager;
 import es.deusto.ssdd.tracker.model.UDPManager;
@@ -35,9 +34,8 @@ public class MainProgram {
 		ConfigurationView configurationView = new ConfigurationView(
 				configurationController);
 
-		DataManager dataManager = DataManager.getInstance();
 		PeerListController peerListController = new PeerListController(
-				udpManager);
+				redundancyManager);
 		PeerListView peerListView = new PeerListView(peerListController);
 
 		globalManager.setRedundancyManager(redundancyManager);

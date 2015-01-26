@@ -73,26 +73,31 @@ public class UDPManager implements Runnable {
 		try {
 			DatagramPacket packet;
 			while (!stopListeningPackets) {
-				byte[] buf = new byte[256];
-				packet = new DatagramPacket(buf, buf.length);
-				System.out.println("Before socket");
-				socket.receive(packet);
-				System.out.println("Post socket");
-				if (isConnectRequestMessage(packet)) {
-					processConnectRequestMessageAndSendResponseMessage(packet.getData(),packet.getAddress(), packet.getPort());
-				} else if (isAnnounceRequestMessage(packet)) {
-					if ( processAnnounceRequestMessageAndSendResponseMessage(packet.getData(), packet.getAddress(), packet.getPort() ) )
+				
+					byte[] buf = new byte[256];
+					packet = new DatagramPacket(buf, buf.length);
+					System.out.println("Before socket");
+					socket.receive(packet);
+					System.out.println("Post socket");
+					if ( globalManager.getTracker() != null && globalManager.getTracker().isMaster() )
 					{
-						AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(packet.getData());
-						topicManager.publishReadyToStoreMessage( msgAnnounceRequest.getConnectionId() );
+						if (isConnectRequestMessage(packet)) {
+							processConnectRequestMessageAndSendResponseMessage(packet.getData(),packet.getAddress(), packet.getPort());
+						} else if (isAnnounceRequestMessage(packet)) {
+							if ( processAnnounceRequestMessageAndSendResponseMessage(packet.getData(), packet.getAddress(), packet.getPort() ) )
+							{
+								AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(packet.getData());
+								topicManager.publishReadyToStoreMessage( msgAnnounceRequest.getConnectionId() );
+							}
+						}
+						else if ( isScrapeRequestMessage(packet)) {
+							processScrapeRequestMessageAndSendResponseMessage (packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
+						}
+						String messageReceived = new String(packet.getData());
+						System.out.println("Received message: " + messageReceived );
 					}
+
 				}
-				else if ( isScrapeRequestMessage(packet)) {
-					processScrapeRequestMessageAndSendResponseMessage (packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
-				}
-				String messageReceived = new String(packet.getData());
-				System.out.println("Received message: " + messageReceived );
-			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -217,7 +222,6 @@ public class UDPManager implements Runnable {
 			
 			if ( response.contains("OK") )
 			{		
-					this.notifyObservers(new String("NewPeer"));
 					ConnectResponse connectResponse = new ConnectResponse();
 					connectResponse.setTransactionId(msgConnectRequest.getTransactionId());
 					connectResponse.setConnectionId( connectionId );
@@ -288,7 +292,6 @@ public class UDPManager implements Runnable {
 			
 			if(infoHashExists){
 				updateListOfSeedersAndlLeechers ( msgAnnounceRequest.getInfoHash(), msgAnnounceRequest.getEvent(), peerInfoForMemory );
-				this.notifyObservers(new String("NewPeer"));
 			}else{
 				List<PeerInfo>tmpList=new ArrayList<PeerInfo>();
 				tmpList.add(peerInfoForMemory);
@@ -299,7 +302,6 @@ public class UDPManager implements Runnable {
 				{
 					DataManager.leechers.put(msgAnnounceRequest.getInfoHash(), tmpList);
 				}	
-				this.notifyObservers(new String("NewPeer"));
 			}
 			
 			if ( response != null && response.contains("OK") )

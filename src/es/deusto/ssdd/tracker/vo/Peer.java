@@ -1,5 +1,7 @@
 package es.deusto.ssdd.tracker.vo;
 
+import java.util.Date;
+
 public class Peer {
 
 	private String id;
@@ -8,6 +10,7 @@ public class Peer {
 	private float downloaded;
 	private float uploaded;
 	private float left;
+	private long lastConnection;
 
 	public String getId() {
 		return id;
@@ -56,5 +59,18 @@ public class Peer {
 	public void setLeft(float left) {
 		this.left = left;
 	}
+
+	public long getLastConnection() {
+		return lastConnection;
+	}
+	
+	public String getLastConnectionFormateada() {
+		return new Date(lastConnection).toString();
+	}
+
+	public void setLastConnection(long lastConnection) {
+		this.lastConnection = lastConnection;
+	}
+	
 	
 }

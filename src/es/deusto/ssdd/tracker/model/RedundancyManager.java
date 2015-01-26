@@ -70,9 +70,31 @@ public class RedundancyManager implements Runnable, MessageListener {
 		topicManager.subscribeTopicIncorrectIdMessages(this);
 		topicManager.subscribeTopicCorrectIdMessages(this);
 
+		generateThreadToEliminatePeers();
 		generateThreadToSendKeepAliveMessages();
 		generateThreadToCheckActiveTrackers();
 		socketListeningPackets();
+	}
+	
+	/**
+	 * TODO:AAEASH -- NO ESTA PROGRAMADO TODAVIA!!
+	 */
+	private void generateThreadToEliminatePeers() {
+		Thread threadToEliminatePeers = new Thread() {
+			public void run() {
+				while (!stopThreadKeepAlive) {
+					try {
+						Thread.sleep(4000);
+						
+					} catch (InterruptedException e) {
+						System.err.println("**INTERRUPTED EXCEPTION..."
+								+ e.getMessage());
+						e.printStackTrace();
+					}
+				}
+			}
+		};
+		threadToEliminatePeers.start();
 	}
 
 	private void generateThreadToSendKeepAliveMessages() {
@@ -99,7 +121,6 @@ public class RedundancyManager implements Runnable, MessageListener {
 
 	private void socketListeningPackets() {
 		try {
-			// DatagramPacket packet;
 			while (!stopListeningPackets) {
 				if (!isChoosingMaster()) {
 					topicManager.start();
@@ -228,9 +249,17 @@ public class RedundancyManager implements Runnable, MessageListener {
 		Map<Long,Peer> peers = DataManager.peers;
 		
 		Peer peerToStore = peers.get(connectionId);
-		dataManager.insertNewPeer(peerToStore);
+		if ( dataManager.existsPeer(peerToStore.getIpAddress(), peerToStore.getPort()) )
+		{
+			dataManager.updatePeer(peerToStore);
+		}
+		else
+		{
+			dataManager.insertNewPeer(peerToStore);
+		}
 		DataManager.peers.remove(connectionId);
 		dataManager.insertLeechersAndSeeders();
+		this.notifyObservers("NewPeer");
 	}
 
 	private void checkIfAllAreReadyToStore(Object... data) {

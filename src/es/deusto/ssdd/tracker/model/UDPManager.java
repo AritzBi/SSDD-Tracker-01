@@ -363,6 +363,8 @@ public class UDPManager implements Runnable {
 	private void updateListOfSeedersAndlLeechers ( String infoHash, Event evento, PeerInfo peerInfo ) {
 		List<PeerInfo>lLeechers=DataManager.leechers.get(infoHash);
 		List<PeerInfo>lSeeders=DataManager.seeders.get(infoHash);
+		System.out.println("Leechers"+lLeechers);
+		System.out.println("Seeder"+lSeeders);
 		boolean contains=false;
 		for(PeerInfo peerInfoI:lLeechers){
 			if(peerInfoI.compareTo(peerInfo)==0){
@@ -382,11 +384,23 @@ public class UDPManager implements Runnable {
 				}
 			}
 		}
-
 		if(evento.equals(Event.COMPLETED)){
-			DataManager.seeders.get(infoHash).add(peerInfo);
+			if(DataManager.seeders.containsKey(infoHash))
+				DataManager.seeders.get(infoHash).add(peerInfo);
+			else{
+				List<PeerInfo>tmpList=new ArrayList<PeerInfo>();
+				tmpList.add(peerInfo);
+				DataManager.seeders.put(infoHash, tmpList);
+			}
+
 		}else{
-			DataManager.leechers.get(infoHash).add(peerInfo);
+			if(DataManager.leechers.containsKey(infoHash))
+				DataManager.leechers.get(infoHash).add(peerInfo);
+			else{
+				List<PeerInfo>tmpList=new ArrayList<PeerInfo>();
+				tmpList.add(peerInfo);
+				DataManager.leechers.put(infoHash, tmpList);
+			}
 		}	
 	}
 	

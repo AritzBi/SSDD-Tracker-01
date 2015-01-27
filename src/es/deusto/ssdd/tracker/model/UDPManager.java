@@ -39,6 +39,8 @@ public class UDPManager implements Runnable {
 	private boolean stopThreadAnnounceTests = false;
 	private static int maximumInterval=60; //Seconds
 	private static int minimumNumbersOfPeers=10; //Seconds
+	
+	private static long CONNECTION_ID_FOR_NO_MASTER_TRACKERS = 4567899L;
 
 	public UDPManager() {
 		observers = new ArrayList<Observer>();
@@ -79,23 +81,22 @@ public class UDPManager implements Runnable {
 					System.out.println("Before socket");
 					socket.receive(packet);
 					System.out.println("Post socket");
-					if ( globalManager.getTracker() != null && globalManager.getTracker().isMaster() )
-					{
-						if (isConnectRequestMessage(packet)) {
-							processConnectRequestMessageAndSendResponseMessage(packet.getData(),packet.getAddress(), packet.getPort());
-						} else if (isAnnounceRequestMessage(packet)) {
-							if ( processAnnounceRequestMessageAndSendResponseMessage(packet.getData(), packet.getAddress(), packet.getPort() ) )
-							{
-								AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(packet.getData());
-								topicManager.publishReadyToStoreMessage( msgAnnounceRequest.getConnectionId() );
-							}
+
+					if (isConnectRequestMessage(packet)) {
+						processConnectRequestMessageAndSendResponseMessage(packet.getData(),packet.getAddress(), packet.getPort());
+					} else if (isAnnounceRequestMessage(packet)) {
+						if ( processAnnounceRequestMessageAndSendResponseMessage(packet.getData(), packet.getAddress(), packet.getPort() ) )
+						{
+							AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(packet.getData());
+							topicManager.publishReadyToStoreMessage( msgAnnounceRequest.getConnectionId() );
 						}
-						else if ( isScrapeRequestMessage(packet)) {
-							processScrapeRequestMessageAndSendResponseMessage (packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
-						}
-						String messageReceived = new String(packet.getData());
-						System.out.println("Received message: " + messageReceived );
 					}
+					else if ( isScrapeRequestMessage(packet)) {
+						processScrapeRequestMessageAndSendResponseMessage (packet.getData(), packet.getLength(), packet.getAddress(), packet.getPort());
+					}
+					String messageReceived = new String(packet.getData());
+					System.out.println("Received message: " + messageReceived );
+					
 
 				}
 		} catch (IOException e) {
@@ -131,9 +132,19 @@ public class UDPManager implements Runnable {
 	{
 		ScrapeRequest msgScrapeRequest = ScrapeRequest.parse( data );
 		
+		if ( !globalManager.getTracker().isMaster() )
+		{
+			Peer peer2 = DataManager.sessionsForPeers.get(CONNECTION_ID_FOR_NO_MASTER_TRACKERS);
+			if ( peer2 != null && address.getHostAddress().equals(DataManager.sessionsForPeers.get(CONNECTION_ID_FOR_NO_MASTER_TRACKERS).getIpAddress() )  )
+			{
+				DataManager.sessionsForPeers.put(msgScrapeRequest.getConnectionId(), peer2);
+				DataManager.sessionsForPeers.remove(CONNECTION_ID_FOR_NO_MASTER_TRACKERS);
+			}
+		}
+		
 		//First of all we check the sent connection id exists
-		if ( DataManager.sessionsForPeers.containsKey(msgScrapeRequest.getConnectionId()) && 
-				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgScrapeRequest.getConnectionId()).getIpAddress()))
+		if (  DataManager.sessionsForPeers.containsKey(msgScrapeRequest.getConnectionId()) && 
+				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgScrapeRequest.getConnectionId()).getIpAddress() ) )
 		{
 			//The info hash that is to be scraped
 			List<String> infoHashes = msgScrapeRequest.getInfoHashes();
@@ -173,6 +184,7 @@ public class UDPManager implements Runnable {
 				
 				if ( scrapeResponse.getScrapeInfos().size() > 0 )
 				{
+					
 					sendResponseMessage(scrapeResponse, address, port);
 				}
 				else
@@ -216,9 +228,17 @@ public class UDPManager implements Runnable {
 		if ( response == null )
 		{
 			//Calculate an unique connection id number that identifies the peer
-			long connectionId = new Random().nextLong();
-			System.out.println(peer);
-			response = dataManager.addPeerToMemory(peer, connectionId);
+			Long connectionId = null;
+			if ( globalManager.getTracker() != null && globalManager.getTracker().isMaster() )
+			{
+				connectionId = new Random().nextLong();
+			}
+			else
+			{
+				connectionId = CONNECTION_ID_FOR_NO_MASTER_TRACKERS;
+			}
+	
+			response = dataManager.addPeerToMemory(peer, connectionId );
 			
 			if ( response.contains("OK") )
 			{		
@@ -231,6 +251,7 @@ public class UDPManager implements Runnable {
 		
 		if ( response != null && !response.contains("OK") )
 		{
+
 			sendErrorMessage ( response , msgConnectRequest.getTransactionId(), address, port);
 		}
 
@@ -245,10 +266,13 @@ public class UDPManager implements Runnable {
 	 */
 	private void sendErrorMessage ( String message, int transactionId, InetAddress address, int port )
 	{
-		es.deusto.ssdd.tracker.udp.messages.Error error = new es.deusto.ssdd.tracker.udp.messages.Error();
-		error.setMessage(message);
-		error.setTransactionId(transactionId);
-		sendResponseMessage(error, address, port);
+		if ( globalManager.getTracker() != null && globalManager.getTracker().isMaster() )
+		{
+			es.deusto.ssdd.tracker.udp.messages.Error error = new es.deusto.ssdd.tracker.udp.messages.Error();
+			error.setMessage(message);
+			error.setTransactionId(transactionId);
+			sendResponseMessage(error, address, port);
+		}
 	}
 
 	private boolean processAnnounceRequestMessageAndSendResponseMessage(byte[] data,
@@ -256,13 +280,23 @@ public class UDPManager implements Runnable {
 		AnnounceRequest msgAnnounceRequest = AnnounceRequest.parse(data);
 		
 		String response = null;
+
+		//First of all we check the sent connection id exists
+		if ( !globalManager.getTracker().isMaster() )
+		{
+			Peer peer2 = DataManager.sessionsForPeers.get(CONNECTION_ID_FOR_NO_MASTER_TRACKERS);
+			if ( peer2 != null && address.getHostAddress().equals(DataManager.sessionsForPeers.get(CONNECTION_ID_FOR_NO_MASTER_TRACKERS).getIpAddress() ) )
+			{
+				DataManager.sessionsForPeers.put(msgAnnounceRequest.getConnectionId(), peer2);
+				DataManager.sessionsForPeers.remove(CONNECTION_ID_FOR_NO_MASTER_TRACKERS);
+			}
+		}
 		
 		//First of all we check the sent connection id exists
 		if ( DataManager.sessionsForPeers.containsKey(msgAnnounceRequest.getConnectionId()) && 
-				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgAnnounceRequest.getConnectionId()).getIpAddress()))
+				address.getHostAddress().equals(DataManager.sessionsForPeers.get(msgAnnounceRequest.getConnectionId()).getIpAddress() ) )
 		{
 			// store data over memory..
-			/*Peer peer = new Peer();*/
 			Peer peer=DataManager.sessionsForPeers.get(msgAnnounceRequest.getConnectionId());
 			peer.setDownloaded(msgAnnounceRequest.getDownloaded());
 			peer.setUploaded(msgAnnounceRequest.getUploaded());
@@ -306,7 +340,10 @@ public class UDPManager implements Runnable {
 			
 			if ( response != null && response.contains("OK") )
 			{
-				sendAnnounceResponseMessage(msgAnnounceRequest, address, port );
+				if ( globalManager.getTracker() != null && globalManager.getTracker().isMaster() )
+				{
+					sendAnnounceResponseMessage(msgAnnounceRequest, address, port );
+				}
 				return true;
 			}
 			else
@@ -330,6 +367,7 @@ public class UDPManager implements Runnable {
 		for(PeerInfo peerInfoI:lLeechers){
 			if(peerInfoI.compareTo(peerInfo)==0){
 				contains=true;
+				peerInfo.setId(peerInfoI.getId());
 				lLeechers.remove(peerInfoI);
 				break;
 			}
@@ -338,6 +376,7 @@ public class UDPManager implements Runnable {
 			for(PeerInfo peerInfoI:lSeeders){
 				if(peerInfoI.compareTo(peerInfo)==0){
 					contains=true;
+					peerInfo.setId(peerInfoI.getId());
 					lSeeders.remove(peerInfoI);
 					break;
 				}
@@ -397,8 +436,8 @@ public class UDPManager implements Runnable {
 		announceResponse.setPeers(peersToSend);
 		
 		announceResponse.setInterval(calculateIntervalForPeer ( msgAnnounceRequest.getPeerId()) );
-		
 		sendResponseMessage(announceResponse, address, port);
+		
 	}
 	
 	private int calculateNumberPeersAllowedForPeer ( String peerId )
@@ -445,12 +484,15 @@ public class UDPManager implements Runnable {
 	 */
 	private void sendResponseMessage ( BitTorrentUDPMessage message , InetAddress address , int port )
 	{
-		try {
-			byte [] bytes = message.getBytes();
-			DatagramPacket reply = new DatagramPacket(bytes, bytes.length, address, port);
-			socket.send(reply);
-		} catch (IOException e) {
-			e.printStackTrace();
+		if ( globalManager.getTracker() != null && globalManager.getTracker().isMaster() )
+		{
+			try {
+				byte [] bytes = message.getBytes();
+				DatagramPacket reply = new DatagramPacket(bytes, bytes.length, address, port);
+				socket.send(reply);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	

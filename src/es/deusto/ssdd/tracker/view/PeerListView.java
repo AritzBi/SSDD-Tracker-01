@@ -184,7 +184,7 @@ public class PeerListView extends JPanel implements Observer, ActionListener {
 			int column = columnModel.getColumnIndexAtX(e.getX());
 			// TODO Use the rows later
 			 int row = e.getY() / table.getRowHeight();
-			if (column == 5) {
+			if (column == 6) {
 				new TorrentsListView(generateTorrentsData(row));
 			}
 

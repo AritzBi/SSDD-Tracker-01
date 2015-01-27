@@ -70,31 +70,9 @@ public class RedundancyManager implements Runnable, MessageListener {
 		topicManager.subscribeTopicIncorrectIdMessages(this);
 		topicManager.subscribeTopicCorrectIdMessages(this);
 
-		generateThreadToEliminatePeers();
 		generateThreadToSendKeepAliveMessages();
 		generateThreadToCheckActiveTrackers();
 		socketListeningPackets();
-	}
-	
-	/**
-	 * TODO:AAEASH -- NO ESTA PROGRAMADO TODAVIA!!
-	 */
-	private void generateThreadToEliminatePeers() {
-		Thread threadToEliminatePeers = new Thread() {
-			public void run() {
-				while (!stopThreadKeepAlive) {
-					try {
-						Thread.sleep(4000);
-						
-					} catch (InterruptedException e) {
-						System.err.println("**INTERRUPTED EXCEPTION..."
-								+ e.getMessage());
-						e.printStackTrace();
-					}
-				}
-			}
-		};
-		threadToEliminatePeers.start();
 	}
 
 	private void generateThreadToSendKeepAliveMessages() {
